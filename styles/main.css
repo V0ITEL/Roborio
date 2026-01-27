@@ -2652,18 +2652,18 @@ width: 95%;
 max-height: 90vh;
 overflow-y: auto;
 }
+/* Mobile wallet dropdown - center like modal, not bottom sheet */
 .wallet-dropdown {
 position: fixed;
-top: auto;
-bottom: 0;
-left: 0;
-right: 0;
-width: 100%;
-border-radius: 16px 16px 0 0;
-transform: translateY(100%);
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%) scale(0.95);
+width: calc(100% - 32px);
+max-width: 320px;
+border-radius: 16px;
 }
 .wallet-dropdown.active {
-transform: translateY(0);
+transform: translate(-50%, -50%) scale(1);
 }
 }
 .robot-loading, .robot-error {
