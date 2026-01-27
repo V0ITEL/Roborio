@@ -1024,18 +1024,23 @@
 
                 // Upload new image if provided (do this first, before DB update)
                 if (imageFile) {
-                    // Get old image URL to delete later
-                    const oldRobotData = await safeSelect(
-                        supabase
-                            .from('robots')
-                            .select('image_url')
-                            .eq('id', robotId),
-                        'Failed to fetch robot data'
-                    );
+                    // Get old image URL to delete later (non-critical - if fails, just skip deletion)
+                    try {
+                        const oldRobotData = await safeSelect(
+                            supabase
+                                .from('robots')
+                                .select('image_url')
+                                .eq('id', robotId),
+                            'Failed to fetch robot data'
+                        );
 
-                    const oldRobot = oldRobotData?.[0];
-                    if (oldRobot?.image_url) {
-                        oldImageFileName = oldRobot.image_url.split('/robot-images/')[1];
+                        const oldRobot = oldRobotData?.[0];
+                        if (oldRobot?.image_url) {
+                            oldImageFileName = oldRobot.image_url.split('/robot-images/')[1];
+                        }
+                    } catch (e) {
+                        // Non-critical: if we can't get old image URL, just skip deletion later
+                        log.warn('[Marketplace]', 'Could not fetch old image URL:', e.message);
                     }
 
                     // Upload new image with unique path
