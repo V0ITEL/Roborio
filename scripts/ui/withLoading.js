@@ -15,46 +15,40 @@ export async function withLoading(buttonEl, asyncFn, options = {}) {
         return;
     }
 
-    // Save original state
-    const originalText = getButtonText(buttonEl);
+    // Save original state - use innerHTML to preserve complex markup (icons, badges, etc.)
+    const originalHTML = buttonEl.innerHTML;
     const originalDisabled = buttonEl.disabled;
 
     // Set loading state
     buttonEl.disabled = true;
-    setButtonText(buttonEl, loadingText);
+    setLoadingContent(buttonEl, loadingText);
     buttonEl.classList.add('is-loading');
 
     try {
         const result = await asyncFn();
         return result;
     } finally {
-        // Restore original state
+        // Restore original state - innerHTML restores full markup
         buttonEl.disabled = originalDisabled;
-        setButtonText(buttonEl, originalText);
+        buttonEl.innerHTML = originalHTML;
         buttonEl.classList.remove('is-loading');
     }
 }
 
 /**
- * Get button text (handles nested .btn-text span)
+ * Set loading content on button
+ * If button has .btn-text span, update only that span's text
+ * Otherwise replace entire content with loading text
  */
-function getButtonText(buttonEl) {
+function setLoadingContent(buttonEl, loadingText) {
     const textSpan = buttonEl.querySelector('.btn-text');
     if (textSpan) {
-        return textSpan.textContent;
-    }
-    return buttonEl.textContent;
-}
-
-/**
- * Set button text (handles nested .btn-text span)
- */
-function setButtonText(buttonEl, text) {
-    const textSpan = buttonEl.querySelector('.btn-text');
-    if (textSpan) {
-        textSpan.textContent = text;
+        // Button has dedicated text span - only update text, keep other elements
+        textSpan.textContent = loadingText;
     } else {
-        buttonEl.textContent = text;
+        // No text span - replace entire content
+        // This is safe because we restore innerHTML in finally
+        buttonEl.textContent = loadingText;
     }
 }
 

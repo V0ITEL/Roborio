@@ -737,14 +737,7 @@
                     return;
                 }
 
-                const btnText = confirmBtn.querySelector('.btn-text');
-                const btnLoading = confirmBtn.querySelector('.btn-loading');
-
-                btnText.hidden = true;
-                btnLoading.hidden = false;
-                confirmBtn.disabled = true;
-
-                try {
+                await withLoading(confirmBtn, async () => {
                     const provider = getWalletProvider();
 
                     // Use Robot object properties (already normalized)
@@ -781,24 +774,10 @@
                         document.getElementById('operatorContactValue').textContent = currentRobot.contact || 'Contact not provided';
                     }
 
-
-                btnText.hidden = false;
-                    btnLoading.hidden = true;
-                    confirmBtn.disabled = false;
-
                     closeModal(rentRobotModal);
                     openModal(successModal);
-
-                } catch (err) {
-                    log.error('[Marketplace]', 'Transaction failed:', err);
-
-                 btnText.hidden = false;
-                    btnLoading.hidden = true;
-                    confirmBtn.disabled = false;
-
-                     // Show error to user
-                    notify.error('Transaction failed: ' + (err.message || 'Unknown error. Please try again.'));
-                }
+                    notify.success('Rental confirmed successfully!');
+                }, { loadingText: 'Processing...' });
             });
 
             cancelBtn?.addEventListener('click', () => closeModal(rentRobotModal));

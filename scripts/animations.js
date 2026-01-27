@@ -1,6 +1,7 @@
 'use strict';
 
 import { log } from './utils/logger.js';
+import notify from './ui/notify.js';
 
 export function initScrollAnimations() {
     try {
@@ -852,7 +853,7 @@ export function initAsciiRobot() {
                     showRobotError();
 
                     // Show toast notification
-                    showToast('Failed to load 3D robot model. Check your connection.', 'error', 7000);
+                    notify.error('Failed to load 3D robot model. Check your connection.');
                 });
             }
 

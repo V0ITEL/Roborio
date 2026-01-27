@@ -2,6 +2,8 @@
 
 import { getCurrentLang } from './i18n.js';
 import { log } from './utils/logger.js';
+import notify from './ui/notify.js';
+import { withLoading } from './ui/withLoading.js';
 
 
 
@@ -299,13 +301,12 @@ export function initWallet() {
 
             closeWalletModal();
             updateWalletUI();
+            notify.success('Wallet connected successfully!');
 
-            
             window.dispatchEvent(new CustomEvent('wallet-connected', {
                 detail: { publicKey: walletState.publicKey }
             }));
 
-            
             provider.on('disconnect', () => {
                 disconnectWallet();
                 window.dispatchEvent(new CustomEvent('wallet-disconnected'));
@@ -327,7 +328,7 @@ export function initWallet() {
 
         } catch (error) {
             log.error('[Wallet]', 'Phantom connection failed:', error);
-            window.showToast('Failed to connect to Phantom wallet. Please try again.', 'error');
+            notify.error('Failed to connect to Phantom wallet. Please try again.');
         }
     }
 
@@ -348,6 +349,7 @@ export function initWallet() {
 
             closeWalletModal();
             updateWalletUI();
+            notify.success('Wallet connected successfully!');
 
             // Dispatch event for marketplace to refresh ownership UI
             window.dispatchEvent(new CustomEvent('wallet-connected', {
@@ -356,7 +358,7 @@ export function initWallet() {
 
         } catch (error) {
             log.error('[Wallet]', 'Solflare connection failed:', error);
-            window.showToast('Failed to connect to Solflare wallet. Please try again.', 'error');
+            notify.error('Failed to connect to Solflare wallet. Please try again.');
         }
     }
 
@@ -377,6 +379,7 @@ export function initWallet() {
 
             closeWalletModal();
             updateWalletUI();
+            notify.success('Wallet connected successfully!');
 
             // Dispatch event for marketplace to refresh ownership UI
             window.dispatchEvent(new CustomEvent('wallet-connected', {
@@ -385,7 +388,7 @@ export function initWallet() {
 
         } catch (error) {
             log.error('[Wallet]', 'Backpack connection failed:', error);
-            window.showToast('Failed to connect to Backpack wallet. Please try again.', 'error');
+            notify.error('Failed to connect to Backpack wallet. Please try again.');
         }
     }
 
@@ -413,13 +416,16 @@ export function initWallet() {
     walletModalOverlay?.addEventListener('click', closeWalletModal);
 
     walletOptions?.forEach(option => {
-        option.addEventListener('click', () => {
+        option.addEventListener('click', async () => {
             const wallet = option.dataset.wallet;
-            switch (wallet) {
-                case 'phantom': connectPhantom(); break;
-                case 'solflare': connectSolflare(); break;
-                case 'backpack': connectBackpack(); break;
-            }
+
+            await withLoading(option, async () => {
+                switch (wallet) {
+                    case 'phantom': await connectPhantom(); break;
+                    case 'solflare': await connectSolflare(); break;
+                    case 'backpack': await connectBackpack(); break;
+                }
+            }, { loadingText: 'Connecting...' });
         });
     });
 
