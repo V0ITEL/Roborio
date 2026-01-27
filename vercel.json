@@ -2,6 +2,11 @@
   "devCommand": "vite --port 3000",
   "outputDirectory": "dist",
   "buildCommand": "vite build",
+  "rewrites": [
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" }
+  ],
   "functions": {
     "api/**/*.js": {
       "memory": 1024,

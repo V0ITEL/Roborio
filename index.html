@@ -576,7 +576,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="robotName">Robot Name <span class="form-required">*</span></label>
-                            <input type="text" class="form-input" id="robotName" name="name" placeholder="e.g. SpeedBot X1" required autocomplete="off">
+                            <input type="text" class="form-input" id="robotName" name="name" placeholder="e.g. SpeedBot X1" required autocomplete="off" maxlength="60">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="robotCategory">Category <span class="form-required">*</span></label>
@@ -595,7 +595,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="robotDescription">Description <span class="form-required">*</span></label>
-                        <textarea class="form-textarea" id="robotDescription" name="description" placeholder="Describe your robot's capabilities..." rows="3" required></textarea>
+                        <textarea class="form-textarea" id="robotDescription" name="description" placeholder="Describe your robot's capabilities..." rows="3" required maxlength="500"></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="robotImage">Robot Photo <span class="form-required">*</span></label>
@@ -640,15 +640,15 @@
                     <div class="form-grid form-grid--3">
                         <div class="form-group">
                             <label class="form-label" for="robotSpeed">Max Speed</label>
-                            <input type="text" class="form-input" id="robotSpeed" name="speed" placeholder="e.g. 20 km/h" autocomplete="off">
+                            <input type="text" class="form-input" id="robotSpeed" name="speed" placeholder="e.g. 20 km/h" autocomplete="off" maxlength="30">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="robotPayload">Payload</label>
-                            <input type="text" class="form-input" id="robotPayload" name="payload" placeholder="e.g. 50 kg" autocomplete="off">
+                            <input type="text" class="form-input" id="robotPayload" name="payload" placeholder="e.g. 50 kg" autocomplete="off" maxlength="30">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="robotBattery">Battery Life</label>
-                            <input type="text" class="form-input" id="robotBattery" name="battery" placeholder="e.g. 8 hours" autocomplete="off">
+                            <input type="text" class="form-input" id="robotBattery" name="battery" placeholder="e.g. 8 hours" autocomplete="off" maxlength="30">
                         </div>
                     </div>
                 </div>
@@ -659,11 +659,11 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="robotLocation">Location <span class="form-optional">(optional)</span></label>
-                            <input type="text" class="form-input" id="robotLocation" name="location" placeholder="e.g. San Francisco, USA" autocomplete="off">
+                            <input type="text" class="form-input" id="robotLocation" name="location" placeholder="e.g. San Francisco, USA" autocomplete="off" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="operatorContact">Contact <span class="form-required">*</span></label>
-                            <input type="text" class="form-input" id="operatorContact" name="contact" placeholder="Email, Phone or Telegram" required autocomplete="off">
+                            <input type="text" class="form-input" id="operatorContact" name="contact" placeholder="Email, Phone or Telegram" required autocomplete="off" maxlength="120">
                         </div>
                     </div>
                 </div>
