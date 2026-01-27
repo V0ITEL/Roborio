@@ -561,12 +561,12 @@
     
 
     <!-- Add Robot Modal -->
-    <div class="marketplace-modal" id="addRobotModal">
+    <div class="marketplace-modal" id="addRobotModal" role="dialog" aria-modal="true" aria-labelledby="addRobotModalTitle" aria-hidden="true">
         <div class="mp-modal-overlay"></div>
         <div class="mp-modal-content mp-modal-content--large">
             <button class="mp-modal-close" aria-label="Close modal">&times;</button>
             <div class="mp-modal-header">
-                <h3 class="mp-modal-title">Add Your Robot</h3>
+                <h3 class="mp-modal-title" id="addRobotModalTitle">Add Your Robot</h3>
                 <p class="mp-modal-subtitle">List your robot on the marketplace and start earning</p>
             </div>
             <form class="robot-form" id="addRobotForm">
@@ -682,12 +682,12 @@
     </div>
 
     <!-- Rent Robot Modal -->
-    <div class="marketplace-modal" id="rentRobotModal">
+    <div class="marketplace-modal" id="rentRobotModal" role="dialog" aria-modal="true" aria-labelledby="rentRobotModalTitle" aria-hidden="true">
         <div class="mp-modal-overlay"></div>
         <div class="mp-modal-content">
             <button class="mp-modal-close" aria-label="Close modal">&times;</button>
             <div class="mp-modal-header">
-                <h3 class="mp-modal-title">Rent Robot</h3>
+                <h3 class="mp-modal-title" id="rentRobotModalTitle">Rent Robot</h3>
                 <p class="mp-modal-subtitle" id="rentRobotName">SpeedBot X1</p>
             </div>
             <div class="rent-details">
@@ -749,13 +749,13 @@
     </div>
 
     <!-- Success Modal (After Rent) -->
-    <div class="marketplace-modal" id="successModal">
+    <div class="marketplace-modal" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successModalTitle" aria-hidden="true">
         <div class="mp-modal-overlay"></div>
         <div class="mp-modal-content mp-modal-content--small">
-            <div class="success-icon">
+            <div class="success-icon" aria-hidden="true">
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#10b981" stroke-width="4"/><path d="M20 32l8 8 16-16" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <h3 class="mp-modal-title">Payment Successful!</h3>
+            <h3 class="mp-modal-title" id="successModalTitle">Payment Successful!</h3>
             <p class="mp-modal-subtitle">Funds are now held in escrow</p>
 
             <div class="operator-contact" id="operatorContact">
@@ -773,39 +773,39 @@
     </div>
 
     <!-- Robot Added Success Modal -->
-    <div class="marketplace-modal" id="robotAddedModal">
+    <div class="marketplace-modal" id="robotAddedModal" role="dialog" aria-modal="true" aria-labelledby="robotAddedModalTitle" aria-hidden="true">
         <div class="mp-modal-overlay"></div>
         <div class="mp-modal-content mp-modal-content--small">
-            <div class="success-icon">
+            <div class="success-icon" aria-hidden="true">
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#10b981" stroke-width="4"/><path d="M20 32l8 8 16-16" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <h3 class="mp-modal-title">Robot Listed!</h3>
+            <h3 class="mp-modal-title" id="robotAddedModalTitle">Robot Listed!</h3>
             <p class="mp-modal-subtitle">Your robot is now available on the marketplace</p>
             <button type="button" class="btn-primary btn-full" id="closeRobotAdded">Done</button>
         </div>
     </div>
 
     <!-- Robot Add Error Modal -->
-    <div class="marketplace-modal" id="robotErrorModal">
+    <div class="marketplace-modal" id="robotErrorModal" role="dialog" aria-modal="true" aria-labelledby="robotErrorModalTitle" aria-hidden="true">
         <div class="mp-modal-overlay"></div>
         <div class="mp-modal-content mp-modal-content--small">
-            <div class="error-icon">
+            <div class="error-icon" aria-hidden="true">
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#ef4444" stroke-width="4"/><path d="M24 24l16 16M40 24L24 40" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/></svg>
             </div>
-            <h3 class="mp-modal-title">Failed to Add Robot</h3>
+            <h3 class="mp-modal-title" id="robotErrorModalTitle">Failed to Add Robot</h3>
             <p class="mp-modal-subtitle" id="robotErrorMessage">Something went wrong. Please try again.</p>
             <button type="button" class="btn-primary btn-full" id="closeRobotError">Try Again</button>
         </div>
     </div>
 
-        <!-- Delete Confirmation Modal -->
-    <div class="marketplace-modal" id="deleteRobotModal">
+    <!-- Delete Confirmation Modal -->
+    <div class="marketplace-modal" id="deleteRobotModal" role="dialog" aria-modal="true" aria-labelledby="deleteRobotModalTitle" aria-hidden="true">
         <div class="mp-modal-overlay"></div>
         <div class="mp-modal-content mp-modal-content--small">
-            <div class="error-icon">
+            <div class="error-icon" aria-hidden="true">
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#ef4444" stroke-width="4"/><path d="M20 24h24M38 24V20a2 2 0 00-2-2h-8a2 2 0 00-2 2v4M26 30v12M32 30v12M38 30v12M22 24v20a2 2 0 002 2h16a2 2 0 002-2V24" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <h3 class="mp-modal-title">Delete Robot?</h3>
+            <h3 class="mp-modal-title" id="deleteRobotModalTitle">Delete Robot?</h3>
             <p class="mp-modal-subtitle">Are you sure you want to delete "<span id="deleteRobotName">Robot Name</span>"? This action cannot be undone.</p>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" id="cancelDelete">Cancel</button>

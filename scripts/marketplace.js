@@ -162,12 +162,18 @@
         function openModal(modal) {
             if (!modal) return;
             modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+
+            // Focus first focusable element
+            const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusable) focusable.focus();
         }
 
         function closeModal(modal) {
             if (!modal) return;
             modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
         }
 

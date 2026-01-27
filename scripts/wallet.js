@@ -72,6 +72,10 @@ export function initWallet() {
         } else {
             walletModal?.classList.add('active');
             walletModalOverlay?.classList.add('active');
+            walletModal?.setAttribute('aria-hidden', 'false');
+            walletModalOverlay?.setAttribute('aria-hidden', 'false');
+            // Focus first wallet option
+            walletModal?.querySelector('.wallet-option')?.focus();
         }
     }
 
@@ -79,6 +83,8 @@ export function initWallet() {
     function closeWalletModal() {
         walletModal?.classList.remove('active');
         walletModalOverlay?.classList.remove('active');
+        walletModal?.setAttribute('aria-hidden', 'true');
+        walletModalOverlay?.setAttribute('aria-hidden', 'true');
     }
 
     // Toggle wallet dropdown
@@ -89,9 +95,13 @@ export function initWallet() {
         if (isActive) {
             walletDropdown?.classList.remove('active');
             overlay?.classList.remove('active');
+            walletDropdown?.setAttribute('aria-hidden', 'true');
+            overlay?.setAttribute('aria-hidden', 'true');
         } else {
             walletDropdown?.classList.add('active');
             overlay?.classList.add('active');
+            walletDropdown?.setAttribute('aria-hidden', 'false');
+            overlay?.setAttribute('aria-hidden', 'false');
         }
     }
 
@@ -100,6 +110,8 @@ export function initWallet() {
         const overlay = document.getElementById('walletDropdownOverlay');
         walletDropdown?.classList.remove('active');
         overlay?.classList.remove('active');
+        walletDropdown?.setAttribute('aria-hidden', 'true');
+        overlay?.setAttribute('aria-hidden', 'true');
     }
 
     // Open buy modal
@@ -107,6 +119,8 @@ export function initWallet() {
         closeWalletDropdown();
         buyModal?.classList.add('active');
         buyModalOverlay?.classList.add('active');
+        buyModal?.setAttribute('aria-hidden', 'false');
+        buyModalOverlay?.setAttribute('aria-hidden', 'false');
 
         // Update Jupiter Preview based on wallet state
         updateJupiterPreview();
@@ -116,6 +130,8 @@ export function initWallet() {
     function closeBuyModal() {
         buyModal?.classList.remove('active');
         buyModalOverlay?.classList.remove('active');
+        buyModal?.setAttribute('aria-hidden', 'true');
+        buyModalOverlay?.setAttribute('aria-hidden', 'true');
     }
 
     // Jupiter Terminal Preview Logic
@@ -441,6 +457,21 @@ export function initWallet() {
 
     buyWaitlistBtn?.addEventListener('click', () => {
         closeBuyModal();
+    });
+
+    // ESC to close modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (walletModal?.classList.contains('active')) {
+                closeWalletModal();
+            }
+            if (buyModal?.classList.contains('active')) {
+                closeBuyModal();
+            }
+            if (walletDropdown?.classList.contains('active')) {
+                closeWalletDropdown();
+            }
+        }
     });
 
     // Auto-connect if previously trusted (silent reconnect on page refresh)
