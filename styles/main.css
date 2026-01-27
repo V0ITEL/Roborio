@@ -2647,10 +2647,21 @@ display: none;
 .btn-wallet {
 padding: 10px 12px;
 }
+/* Mobile modal fix - center properly on iOS */
 .modal {
-width: 95%;
-max-height: 90vh;
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: calc(100% - 32px);
+max-width: 420px;
+max-height: calc(100vh - 32px);
+max-height: calc(100dvh - 32px); /* iOS safe area */
 overflow-y: auto;
+margin: 0;
+}
+.modal.active {
+transform: translate(-50%, -50%);
 }
 /* Mobile wallet dropdown - center like modal, not bottom sheet */
 .wallet-dropdown {
