@@ -316,7 +316,7 @@ backdrop-filter: blur(8px);
 position: relative;
 width: 100%;
 max-width: 500px;
-max-height: 90vh;
+max-height: calc(100dvh - 48px);
 overflow-y: auto;
 background: var(--bg-card);
 border: 1px solid var(--border-color);
@@ -835,9 +835,17 @@ gap: 16px;
 }
 .marketplace-filters {
 overflow-x: auto;
+overflow-y: hidden;
 flex-wrap: nowrap;
 padding-bottom: 12px;
 -webkit-overflow-scrolling: touch;
+scroll-snap-type: x proximity;
+overscroll-behavior-x: contain;
+touch-action: pan-y;
+scrollbar-width: none;
+}
+.marketplace-filters::-webkit-scrollbar {
+display: none;
 }
 .filter-btn {
 flex-shrink: 0;

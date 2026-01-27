@@ -980,31 +980,28 @@ margin: 0 auto 56px;
 display: flex;
 gap: 20px;
 overflow-x: auto;
-overflow-y: visible;
+overflow-y: hidden;
 padding: 20px 24px 24px;
 margin-top: 24px;
 -webkit-overflow-scrolling: touch;
 scrollbar-width: none;
-cursor: grab;
-}
-@media (hover: hover) and (pointer: fine) {
-.usecases-scroll {
-scroll-snap-type: x mandatory;
+scroll-snap-type: x proximity;
+overscroll-behavior-x: contain;
+touch-action: auto;
 user-select: none;
+-webkit-user-select: none;
 }
 .usecase-card {
 scroll-snap-align: start;
 }
-}
-.usecases-scroll:active {
-cursor: grabbing;
-}
-.usecases-scroll.dragging {
-cursor: grabbing;
-scroll-snap-type: none;
-}
 .usecases-scroll::-webkit-scrollbar {
 display: none;
+}
+/* Desktop: disable snap for smoother mouse wheel scrolling */
+@media (hover: hover) and (pointer: fine) {
+.usecases-scroll {
+scroll-snap-type: none;
+}
 }
 .usecase-card {
 flex: 0 0 320px;
@@ -2194,33 +2191,36 @@ background: rgba(0, 0, 0, 0.8);
 backdrop-filter: blur(4px);
 opacity: 0;
 visibility: hidden;
+pointer-events: none;
 transition: all 0.3s ease;
 z-index: 9998;
 }
 .modal-overlay.active {
 opacity: 1;
 visibility: visible;
+pointer-events: auto;
 }
 .modal {
 position: fixed;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%) scale(0.95);
+inset: 0;
+margin: auto;
+width: min(420px, calc(100% - 32px));
+height: fit-content;
+max-height: calc(100dvh - 32px);
 background: var(--bg-card);
 border: 1px solid var(--border-color);
 border-radius: 16px;
-width: 90%;
-max-width: 420px;
 opacity: 0;
 visibility: hidden;
-transition: all 0.3s ease;
+pointer-events: none;
+transition: opacity 0.3s ease, visibility 0.3s ease;
 z-index: 9999;
-overflow: hidden;
+overflow: auto;
 }
 .modal.active {
 opacity: 1;
 visibility: visible;
-transform: translate(-50%, -50%) scale(1);
+pointer-events: auto;
 }
 .modal-header {
 display: flex;
@@ -2304,25 +2304,27 @@ text-align: center;
 }
 .wallet-dropdown {
 position: fixed;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%) scale(0.95);
-width: 90%;
-max-width: 320px;
+inset: 0;
+margin: auto;
+width: min(320px, calc(100% - 32px));
+height: fit-content;
+max-height: calc(100dvh - 32px);
 background: var(--bg-card);
 border: 1px solid var(--border-color);
 border-radius: 16px;
 padding: 24px;
 opacity: 0;
 visibility: hidden;
-transition: all 0.3s ease;
+pointer-events: none;
+transition: opacity 0.3s ease, visibility 0.3s ease;
 z-index: 9999;
 box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+overflow: auto;
 }
 .wallet-dropdown.active {
 opacity: 1;
 visibility: visible;
-transform: translate(-50%, -50%) scale(1);
+pointer-events: auto;
 }
 .wallet-dropdown-overlay {
 position: fixed;
@@ -2331,12 +2333,14 @@ background: rgba(0, 0, 0, 0.7);
 backdrop-filter: blur(4px);
 opacity: 0;
 visibility: hidden;
+pointer-events: none;
 transition: all 0.3s ease;
 z-index: 9998;
 }
 .wallet-dropdown-overlay.active {
 opacity: 1;
 visibility: visible;
+pointer-events: auto;
 }
 .wallet-dropdown-header {
 display: flex;
@@ -2647,35 +2651,6 @@ display: none;
 }
 .btn-wallet {
 padding: 10px 12px;
-}
-/* Mobile modal fix - center properly on iOS */
-.modal {
-position: fixed;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%);
-width: calc(100% - 32px);
-max-width: 420px;
-max-height: calc(100vh - 32px);
-max-height: calc(100dvh - 32px); /* iOS safe area */
-overflow-y: auto;
-margin: 0;
-}
-.modal.active {
-transform: translate(-50%, -50%);
-}
-/* Mobile wallet dropdown - center like modal, not bottom sheet */
-.wallet-dropdown {
-position: fixed;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%) scale(0.95);
-width: calc(100% - 32px);
-max-width: 320px;
-border-radius: 16px;
-}
-.wallet-dropdown.active {
-transform: translate(-50%, -50%) scale(1);
 }
 }
 .robot-loading, .robot-error {

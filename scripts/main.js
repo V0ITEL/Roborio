@@ -555,118 +555,42 @@ async function loadExternalScripts() {
         }
     }
 
-    // ============ Usecases Infinite Carousel ============
+    // ============ Usecases Carousel (Desktop Drag) ============
     function initUsecasesScroll() {
         try {
             const container = document.getElementById('usecasesScroll');
             if (!container) return;
 
-            const cards = Array.from(container.querySelectorAll('.usecase-card'));
-            if (cards.length === 0) return;
-
-            // NO CLONING - just use original cards (no infinite loop)
-            // Container starts at scroll position 0 (beginning)
-
+            // Simple mouse drag for desktop (no inertia - cleaner UX)
             let isDown = false;
             let startX = 0;
             let startScroll = 0;
-            let velocity = 0;
-            let lastX = 0;
-            let lastTime = 0;
-            let animFrameId = null;
-
-            function animate() {
-                if (Math.abs(velocity) > 0.5) {
-                    container.scrollLeft -= velocity;
-                    velocity *= 0.85;
-                    // No checkPosition() - allow natural scroll boundaries
-                    animFrameId = requestAnimationFrame(animate);
-                } else {
-                    velocity = 0;
-                    cancelAnimationFrame(animFrameId);
-                }
-            }
 
             container.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return; // Only left click
                 isDown = true;
-                cancelAnimationFrame(animFrameId);
-                velocity = 0;
                 startX = e.clientX;
                 startScroll = container.scrollLeft;
-                lastX = e.clientX;
-                lastTime = Date.now();
                 container.classList.add('dragging');
+                e.preventDefault();
             });
 
             container.addEventListener('mousemove', (e) => {
                 if (!isDown) return;
-
-                const now = Date.now();
-                const elapsed = now - lastTime;
-
                 container.scrollLeft = startScroll + (startX - e.clientX);
-
-                if (elapsed > 0) {
-                    velocity = (lastX - e.clientX) * (1000 / elapsed) * 0.08;
-                }
-
-                lastX = e.clientX;
-                lastTime = now;
-                // No checkPosition() - allow natural scroll boundaries
+                e.preventDefault();
             });
 
             function endDrag() {
                 if (!isDown) return;
                 isDown = false;
                 container.classList.remove('dragging');
-
-                if (Math.abs(velocity) > 0.5) {
-                    animate();
-                }
             }
 
-            container.addEventListener('mouseup', endDrag);
+            window.addEventListener('mouseup', endDrag);
             container.addEventListener('mouseleave', endDrag);
 
-            // Touch events
-            let touchStartX = 0;
-            let touchStartScroll = 0;
-
-            container.addEventListener('touchstart', (e) => {
-                isDown = true;
-                cancelAnimationFrame(animFrameId);
-                velocity = 0;
-                touchStartX = e.touches[0].clientX;
-                touchStartScroll = container.scrollLeft;
-                lastX = e.touches[0].clientX;
-                lastTime = Date.now();
-            }, { passive: true });
-
-            container.addEventListener('touchmove', (e) => {
-                if (!isDown) return;
-
-                const now = Date.now();
-                const elapsed = now - lastTime;
-
-                container.scrollLeft = touchStartScroll + (touchStartX - e.touches[0].clientX);
-
-                if (elapsed > 0) {
-                    velocity = (lastX - e.touches[0].clientX) * (1000 / elapsed) * 0.08;
-                }
-
-                lastX = e.touches[0].clientX;
-                lastTime = now;
-                // No checkPosition() - allow natural scroll boundaries
-            }, { passive: true });
-
-            container.addEventListener('touchend', () => {
-                if (!isDown) return;
-                isDown = false;
-
-                if (Math.abs(velocity) > 0.5) {
-                    animate();
-                }
-            });
+            // Touch: native scroll (no JS interference)
 
         } catch (e) {
             log.error('[Usecases]', 'Scroll init failed:', e);
