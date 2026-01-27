@@ -66,7 +66,7 @@ export function initWaitlist() {
                 log.info('[Waitlist]', 'Signup successful:', sanitizedEmail);
                 form.style.display = 'none';
                 success.classList.add('show');
-                notify.success('Successfully joined the waitlist!');
+                notify.success("You're on the list!");
 
             } catch (error) {
                 log.error('[Waitlist]', 'API error:', error);
@@ -74,7 +74,7 @@ export function initWaitlist() {
                 // Check for specific error cases, otherwise show generic message
                 const errMsg = error.message || '';
                 if (errMsg.includes('already registered') || errMsg.includes('Email already')) {
-                    notify.error('This email is already on the waitlist!');
+                    notify.error('This email is already registered.');
                 } else {
                     notify.error('Failed to join waitlist. Please try again.');
                 }

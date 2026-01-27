@@ -317,7 +317,7 @@ export function initWallet() {
 
             closeWalletModal();
             updateWalletUI();
-            notify.success('Wallet connected successfully!');
+            notify.success('Wallet connected');
 
             window.dispatchEvent(new CustomEvent('wallet-connected', {
                 detail: { publicKey: walletState.publicKey }
@@ -344,7 +344,7 @@ export function initWallet() {
 
         } catch (error) {
             log.error('[Wallet]', 'Phantom connection failed:', error);
-            notify.error('Failed to connect to Phantom wallet. Please try again.');
+            notify.error('Could not connect to Phantom. Please try again.');
         }
     }
 
@@ -365,7 +365,7 @@ export function initWallet() {
 
             closeWalletModal();
             updateWalletUI();
-            notify.success('Wallet connected successfully!');
+            notify.success('Wallet connected');
 
             // Dispatch event for marketplace to refresh ownership UI
             window.dispatchEvent(new CustomEvent('wallet-connected', {
@@ -374,7 +374,7 @@ export function initWallet() {
 
         } catch (error) {
             log.error('[Wallet]', 'Solflare connection failed:', error);
-            notify.error('Failed to connect to Solflare wallet. Please try again.');
+            notify.error('Could not connect to Solflare. Please try again.');
         }
     }
 
@@ -395,7 +395,7 @@ export function initWallet() {
 
             closeWalletModal();
             updateWalletUI();
-            notify.success('Wallet connected successfully!');
+            notify.success('Wallet connected');
 
             // Dispatch event for marketplace to refresh ownership UI
             window.dispatchEvent(new CustomEvent('wallet-connected', {
@@ -404,7 +404,7 @@ export function initWallet() {
 
         } catch (error) {
             log.error('[Wallet]', 'Backpack connection failed:', error);
-            notify.error('Failed to connect to Backpack wallet. Please try again.');
+            notify.error('Could not connect to Backpack. Please try again.');
         }
     }
 

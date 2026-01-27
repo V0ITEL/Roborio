@@ -666,7 +666,7 @@
             const robot = robotsMap.get(robotId);
             if (!robot) {
                 log.error('[Marketplace]', 'Robot not found in robotsMap:', robotId);
-                notify.error('Robot not found');
+                notify.error('Robot not found. It may have been removed.');
                 return;
             }
 
@@ -733,7 +733,7 @@
 
             confirmBtn?.addEventListener('click', async () => {
                 if (!currentRobot) {
-                    notify.error('No robot selected');
+                    notify.error('Please select a robot first.');
                     return;
                 }
 
@@ -802,7 +802,7 @@
             const robot = robotsMap.get(robotId);
             if (!robot) {
                 log.error('[Marketplace]', 'Robot not found in robotsMap:', robotId);
-                notify.error('Robot not found');
+                notify.error('Robot not found. It may have been removed.');
                 return;
             }
 
@@ -934,7 +934,7 @@
             const robot = robotsMap.get(robotId);
             if (!robot) {
                 log.error('[Marketplace]', 'Robot not found in robotsMap:', robotId);
-                notify.error('Robot not found');
+                notify.error('Robot not found. It may have been removed.');
                 return;
             }
 

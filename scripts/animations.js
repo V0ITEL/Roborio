@@ -853,7 +853,7 @@ export function initAsciiRobot() {
                     showRobotError();
 
                     // Show toast notification
-                    notify.error('Failed to load 3D robot model. Check your connection.');
+                    notify.error('Could not load 3D model. Check your connection.');
                 });
             }
 
