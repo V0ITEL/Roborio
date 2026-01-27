@@ -796,6 +796,57 @@ text-align: center;
 .marketplace-empty.hidden {
 display: none;
 }
+
+/* Marketplace Grid Loading State */
+.marketplace-grid.is-loading {
+opacity: 0.5;
+pointer-events: none;
+}
+
+/* Marketplace Notice (Loading/Error) */
+.marketplace-notice {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 12px;
+padding: 16px 24px;
+margin-bottom: 16px;
+border-radius: 8px;
+background: var(--bg-card);
+border: 1px solid var(--border-color);
+font-size: 14px;
+color: var(--text-muted);
+}
+.marketplace-notice.hidden {
+display: none;
+}
+.marketplace-notice--error {
+border-color: #ef4444;
+background: rgba(239, 68, 68, 0.1);
+color: var(--text-primary);
+}
+.notice-icon {
+font-size: 18px;
+flex-shrink: 0;
+}
+.notice-text {
+flex: 1;
+}
+.notice-retry {
+padding: 6px 12px;
+font-size: 12px;
+font-weight: 500;
+background: transparent;
+border: 1px solid var(--border-color);
+border-radius: 6px;
+color: var(--text-primary);
+cursor: pointer;
+transition: all 0.2s ease;
+}
+.notice-retry:hover {
+background: var(--bg-hover);
+border-color: var(--accent);
+}
 .empty-icon {
 font-size: 64px;
 margin-bottom: 24px;

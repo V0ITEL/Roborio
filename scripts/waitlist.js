@@ -19,7 +19,7 @@ export function initWaitlist() {
 
        
         if (!navigator.onLine) {
-            notify.error("You're offline. Please go online and try again.");
+            notify.error('No internet connection');
             return;
         }
 
@@ -66,7 +66,7 @@ export function initWaitlist() {
                 log.info('[Waitlist]', 'Signup successful:', sanitizedEmail);
                 form.style.display = 'none';
                 success.classList.add('show');
-                notify.success("You're on the list!");
+                notify.success("You're on the list");
 
             } catch (error) {
                 log.error('[Waitlist]', 'API error:', error);
@@ -74,9 +74,9 @@ export function initWaitlist() {
                 // Check for specific error cases, otherwise show generic message
                 const errMsg = error.message || '';
                 if (errMsg.includes('already registered') || errMsg.includes('Email already')) {
-                    notify.error('This email is already registered.');
+                    notify.error('Email already on the list');
                 } else {
-                    notify.error('Failed to join waitlist. Please try again.');
+                    notify.error('Something went wrong. Please try again.');
                 }
             }
         }, { loadingText: 'Sending...' });

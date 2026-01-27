@@ -10,11 +10,13 @@
 
         /** @type {Map<string, import('./models/robot.js').Robot>} */
         const robotsMap = new Map();
-   
+
         const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
         const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
         let supabase = null;
+        let isLoading = false;
+        let loadError = false;
 
         // Initialize Supabase client
         function initSupabase() {
@@ -159,6 +161,19 @@
             }
         }
 
+        /**
+         * Require wallet connection or prompt user to connect
+         * @returns {string|null} wallet address if connected, null if not
+         */
+        function requireWalletOrPrompt() {
+            const wallet = getConnectedWallet();
+            if (wallet) return wallet;
+
+            notify.info('Connect your wallet to continue');
+            openExistingWalletModal();
+            return null;
+        }
+
         // Modal Functions for our new modals
         function openModal(modal) {
             if (!modal) return;
@@ -218,10 +233,82 @@
         }
 
         // Update empty state visibility
+        // Shows only when: supabase initialized (or demo mode), loading done, no error, robots empty
         function updateEmptyState() {
+            if (!marketplaceEmpty) return;
+
+            // Hide during loading or on error
+            if (isLoading || loadError) {
+                marketplaceEmpty.classList.add('hidden');
+                return;
+            }
+
             const hasRobots = robotsGrid?.querySelectorAll('.market-card').length > 0;
-            if (marketplaceEmpty) {
-                marketplaceEmpty.classList.toggle('hidden', hasRobots);
+            marketplaceEmpty.classList.toggle('hidden', hasRobots);
+        }
+
+        // Set loading state on grid
+        function setGridLoading(loading) {
+            isLoading = loading;
+            if (robotsGrid) {
+                robotsGrid.classList.toggle('is-loading', loading);
+            }
+            // Hide empty state during loading
+            if (loading && marketplaceEmpty) {
+                marketplaceEmpty.classList.add('hidden');
+            }
+            // Show/hide loading notice
+            updateLoadingNotice(loading);
+        }
+
+        // Loading notice (injected once, toggled via hidden class)
+        let loadingNotice = null;
+
+        function updateLoadingNotice(show) {
+            if (!robotsGrid) return;
+
+            // Create notice element once
+            if (!loadingNotice) {
+                loadingNotice = document.createElement('div');
+                loadingNotice.className = 'marketplace-notice hidden';
+                loadingNotice.id = 'marketplaceLoading';
+                loadingNotice.innerHTML = '<span class="notice-icon">⏳</span><span class="notice-text">Loading robots...</span>';
+                robotsGrid.parentNode.insertBefore(loadingNotice, robotsGrid);
+            }
+
+            loadingNotice.classList.toggle('hidden', !show);
+        }
+
+        // Error notice (injected once, toggled via hidden class)
+        let errorNotice = null;
+
+        function showErrorNotice(message) {
+            if (!robotsGrid) return;
+
+            // Create error element once
+            if (!errorNotice) {
+                errorNotice = document.createElement('div');
+                errorNotice.className = 'marketplace-notice marketplace-notice--error hidden';
+                errorNotice.id = 'marketplaceError';
+                errorNotice.innerHTML = `
+                    <span class="notice-icon">⚠️</span>
+                    <span class="notice-text"></span>
+                    <button class="notice-retry" type="button">Retry</button>
+                `;
+                errorNotice.querySelector('.notice-retry').addEventListener('click', () => {
+                    hideErrorNotice();
+                    loadRobotsFromDB();
+                });
+                robotsGrid.parentNode.insertBefore(errorNotice, robotsGrid);
+            }
+
+            errorNotice.querySelector('.notice-text').textContent = message;
+            errorNotice.classList.remove('hidden');
+        }
+
+        function hideErrorNotice() {
+            if (errorNotice) {
+                errorNotice.classList.add('hidden');
             }
         }
 
@@ -230,10 +317,20 @@
         // Load robots from Supabase
         async function loadRobotsFromDB() {
             log.debug('[Marketplace]', 'loadRobotsFromDB called, supabase:', !!supabase);
+
+            // Demo mode - no loading needed
             if (!supabase) {
                 log.info('[Marketplace]', 'Demo mode: No robots loaded from DB');
+                loadError = false;
+                hideErrorNotice();
+                updateEmptyState();
                 return;
             }
+
+            // Start loading, clear previous error
+            setGridLoading(true);
+            loadError = false;
+            hideErrorNotice();
 
             try {
                 const data = await safeSelect(
@@ -261,10 +358,15 @@
                     log.info('[Marketplace]', 'No robots found in database');
                 }
 
+                // Success - clear loading, show empty state if needed
+                setGridLoading(false);
                 updateEmptyState();
             } catch (err) {
                 log.error('[Marketplace]', 'Error loading robots:', err);
-                notify.error('Failed to load robots. Please refresh the page.');
+                loadError = true;
+                setGridLoading(false);
+                // Show inline error with retry button
+                showErrorNotice('Failed to load robots');
             }
         }
 
@@ -456,13 +558,25 @@
 
         // Category Filter
         function setupFilters() {
+            if (!filterBtns || !filterBtns.length) return;
+
             filterBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
+                    // Guard: don't filter during loading
+                    if (isLoading) return;
+
                     filterBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
 
                     const category = btn.dataset.category;
+
+                    // Guard: check robotsGrid exists
+                    if (!robotsGrid) return;
+
                     const cards = robotsGrid.querySelectorAll('.market-card');
+
+                    // Guard: handle empty/null cards
+                    if (!cards || !cards.length) return;
 
                     cards.forEach(card => {
                         if (category === 'all' || card.dataset.category === category) {
@@ -491,7 +605,7 @@
                 const file = e.target.files[0];
                 if (file) {
                     if (file.size > 5 * 1024 * 1024) {
-                        notify.error('File too large. Max 5MB allowed.');
+                        notify.error('Image must be under 5MB');
                         return;
                     }
                     const reader = new FileReader();
@@ -518,14 +632,12 @@
 
                 // Offline guard
                 if (!navigator.onLine) {
-                    notify.error("You're offline. Please go online and try again.");
+                    notify.error('No internet connection');
                     return;
                 }
 
-                if (!isWalletConnected()) {
-                    openExistingWalletModal();
-                    return;
-                }
+                // Wallet guard
+                if (!requireWalletOrPrompt()) return;
 
                 const submitBtn = document.getElementById('submitRobot');
                 const loadingText = robotToEdit ? 'Saving...' : 'Listing...';
@@ -581,10 +693,10 @@
 
                             closeModal(addRobotModal);
                             resetAddRobotForm();
-                            notify.success('Robot updated successfully');
+                            notify.success('Robot updated');
                             robotToEdit = null;
                         } else {
-                            notify.error('Failed to update robot. Please try again.');
+                            notify.error('Could not update robot. Please try again.');
                         }
 
                     } else {
@@ -659,15 +771,12 @@
          * @param {string} robotId
          */
         function openRentModalById(robotId) {
-            if (!isWalletConnected()) {
-                openExistingWalletModal();
-                return;
-            }
+            if (!requireWalletOrPrompt()) return;
 
             const robot = robotsMap.get(robotId);
             if (!robot) {
                 log.error('[Marketplace]', 'Robot not found in robotsMap:', robotId);
-                notify.error('Robot not found. It may have been removed.');
+                notify.error('Robot not found');
                 return;
             }
 
@@ -703,10 +812,7 @@
                 openRentModalById(robotId);
             } else {
                 // Fallback for demo mode cards without robotsMap entry
-                if (!isWalletConnected()) {
-                    openExistingWalletModal();
-                    return;
-                }
+                if (!requireWalletOrPrompt()) return;
                 currentRobot = {
                     id: card.dataset.id || '',
                     ownerWallet: card.dataset.ownerWallet || '',
@@ -734,15 +840,18 @@
 
             confirmBtn?.addEventListener('click', async () => {
                 if (!currentRobot) {
-                    notify.error('Please select a robot first.');
+                    notify.error('Select a robot first');
                     return;
                 }
 
                 // Offline guard
                 if (!navigator.onLine) {
-                    notify.error("You're offline. Please go online and try again.");
+                    notify.error('No internet connection');
                     return;
                 }
+
+                // Wallet guard for payment
+                if (!requireWalletOrPrompt()) return;
 
                 await withLoading(confirmBtn, async () => {
                     const provider = getWalletProvider();
@@ -783,7 +892,7 @@
 
                     closeModal(rentRobotModal);
                     openModal(successModal);
-                    notify.success('Rental confirmed successfully!');
+                    notify.success('Rental confirmed');
                 }, { loadingText: 'Processing...' });
             });
 
@@ -800,10 +909,13 @@
          * @param {string} robotId
          */
         function openDeleteModalById(robotId) {
+            // Defensive wallet check
+            if (!requireWalletOrPrompt()) return;
+
             const robot = robotsMap.get(robotId);
             if (!robot) {
                 log.error('[Marketplace]', 'Robot not found in robotsMap:', robotId);
-                notify.error('Robot not found. It may have been removed.');
+                notify.error('Robot not found');
                 return;
             }
 
@@ -891,9 +1003,12 @@
 
                 // Offline guard
                 if (!navigator.onLine) {
-                    notify.error("You're offline. Please go online and try again.");
+                    notify.error('No internet connection');
                     return;
                 }
+
+                // Defensive wallet check
+                if (!requireWalletOrPrompt()) return;
 
                 await withLoading(confirmBtn, async () => {
                     // Use robot.id from Robot object (not from dataset)
@@ -909,10 +1024,10 @@
 
                         closeModal(deleteRobotModal);
                         updateEmptyState();
-                        notify.success('Robot deleted successfully');
+                        notify.success('Robot deleted');
                         robotToDelete = null;
                     } else {
-                        notify.error('Failed to delete robot. Please try again.');
+                        notify.error('Could not delete robot. Please try again.');
                     }
                 }, { loadingText: 'Deleting...' });
             });
@@ -932,10 +1047,13 @@
          * @param {string} robotId
          */
         function openEditModalById(robotId) {
+            // Defensive wallet check
+            if (!requireWalletOrPrompt()) return;
+
             const robot = robotsMap.get(robotId);
             if (!robot) {
                 log.error('[Marketplace]', 'Robot not found in robotsMap:', robotId);
-                notify.error('Robot not found. It may have been removed.');
+                notify.error('Robot not found');
                 return;
             }
 
@@ -1122,22 +1240,16 @@
         function setupEventListeners() {
             // Add Robot button (header)
             addRobotBtn?.addEventListener('click', () => {
-                if (!isWalletConnected()) {
-                    openExistingWalletModal();
-                } else {
-                    resetAddRobotForm();
-                    openModal(addRobotModal);
-                }
+                if (!requireWalletOrPrompt()) return;
+                resetAddRobotForm();
+                openModal(addRobotModal);
             });
 
             // Add Robot button (empty state)
             addRobotEmptyBtn?.addEventListener('click', () => {
-                if (!isWalletConnected()) {
-                    openExistingWalletModal();
-                } else {
-                    resetAddRobotForm();
-                    openModal(addRobotModal);
-                }
+                if (!requireWalletOrPrompt()) return;
+                resetAddRobotForm();
+                openModal(addRobotModal);
             });
 
             // Cancel Add Robot
@@ -1223,7 +1335,7 @@
             setupRentModal();
             setupDeleteModal();
             setupEventListeners();
-            updateEmptyState();
+            // Note: updateEmptyState() is called after loadRobotsFromDB() completes
 
             // Listen for wallet connect/disconnect events from wallet.js
             window.addEventListener('wallet-connected', () => {
