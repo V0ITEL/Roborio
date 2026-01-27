@@ -1,0 +1,36 @@
+# Roborio - Robot-as-a-Service Marketplace
+# robots.txt
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://www.roborio.xyz/sitemap.xml
+
+# Block access to unnecessary files
+Disallow: /node_modules/
+Disallow: /*.json$
+Disallow: /package.json
+Disallow: /package-lock.json
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# Crawl-delay for politeness (optional)
+Crawl-delay: 1

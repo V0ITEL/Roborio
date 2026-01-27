@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Roborio</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="icons/roborio-favicon.svg">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --surface: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent: #10b981;
+            --accent-hover: #059669;
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--accent) 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .toc h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin-bottom: 12px;
+        }
+
+        .toc a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .toc a:hover {
+            color: var(--accent);
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            margin-top: 40px;
+            color: var(--accent);
+        }
+
+        h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            margin-top: 30px;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: var(--text-muted);
+        }
+
+        code {
+            background: var(--surface);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent);
+        }
+
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .info-box {
+            background: var(--surface);
+            border-left: 4px solid var(--accent);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box strong {
+            color: var(--accent);
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            h2 {
+                font-size: 28px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="logo">Roborio</a>
+            <a href="/" class="back-btn">← Back to Home</a>
+        </div>
+
+        <h1>Documentation</h1>
+        <p class="subtitle">Everything you need to know about Roborio - the decentralized robot rental marketplace on Solana.</p>
+
+        <div class="toc">
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#overview">1. Overview</a></li>
+                <li><a href="#getting-started">2. Getting Started</a></li>
+                <li><a href="#how-it-works">3. How It Works</a></li>
+                <li><a href="#pricing">4. Pricing Models</a></li>
+                <li><a href="#token">5. $ROBORIO Token</a></li>
+                <li><a href="#api">6. API Integration</a></li>
+                <li><a href="#faq">7. FAQ</a></li>
+            </ul>
+        </div>
+
+        <div class="section" id="overview">
+            <h2>1. Overview</h2>
+            <p>Roborio is the first decentralized marketplace for robot rentals built on Solana blockchain. We connect robot operators with businesses needing automation, enabling flexible, on-demand access to robotic services.</p>
+
+            <div class="info-box">
+                <strong>Key Features:</strong>
+                <ul>
+                    <li>Flexible pricing: per-task, per-minute, or per-kilometer</li>
+                    <li>Multiple payment options: SOL, USDC, or $ROBORIO (20% discount)</li>
+                    <li>Smart contract escrow for secure transactions</li>
+                    <li>Real-time tracking and monitoring</li>
+                    <li>Transparent rating system</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section" id="getting-started">
+            <h2>2. Getting Started</h2>
+
+            <h3>For Businesses (Renters)</h3>
+            <ol>
+                <li><strong>Connect Your Wallet</strong> - Use Phantom, Solflare, or any Solana-compatible wallet</li>
+                <li><strong>Browse Robots</strong> - Filter by type, location, pricing, and availability</li>
+                <li><strong>Select & Book</strong> - Choose your robot and rental duration</li>
+                <li><strong>Pay & Deploy</strong> - Payment is held in escrow until task completion</li>
+                <li><strong>Track & Verify</strong> - Monitor robot performance in real-time</li>
+                <li><strong>Rate & Review</strong> - Help others by leaving feedback</li>
+            </ol>
+
+            <h3>For Operators (Providers)</h3>
+            <ol>
+                <li><strong>Register Your Robot</strong> - Submit robot specifications and certifications</li>
+                <li><strong>Set Pricing</strong> - Choose per-task, per-minute, or per-km pricing</li>
+                <li><strong>List on Marketplace</strong> - Make your robot available for rent</li>
+                <li><strong>Accept Bookings</strong> - Receive automated notifications</li>
+                <li><strong>Complete Tasks</strong> - Robot performs the work</li>
+                <li><strong>Get Paid</strong> - Automatic settlement via smart contracts</li>
+            </ol>
+        </div>
+
+        <div class="section" id="how-it-works">
+            <h2>3. How It Works</h2>
+
+            <h3>The Three-Layer Architecture</h3>
+
+            <p><strong>Layer 1: Physical Robots</strong></p>
+            <ul>
+                <li>Delivery robots for last-mile logistics</li>
+                <li>Cleaning robots for commercial spaces</li>
+                <li>Security robots for patrol and monitoring</li>
+                <li>Inspection drones for infrastructure</li>
+                <li>Warehouse AGVs for automation</li>
+            </ul>
+
+            <p><strong>Layer 2: Pricing Engine</strong></p>
+            <ul>
+                <li>Per-task: Fixed price for specific jobs</li>
+                <li>Per-minute: Time-based rental</li>
+                <li>Per-km: Distance-based pricing</li>
+            </ul>
+
+            <p><strong>Layer 3: Blockchain Platform</strong></p>
+            <ul>
+                <li>Smart contracts for escrow and payments</li>
+                <li>Real-time tracking via IoT integration</li>
+                <li>Transparent rating and review system</li>
+                <li>REST API for third-party integration</li>
+            </ul>
+        </div>
+
+        <div class="section" id="pricing">
+            <h2>4. Pricing Models</h2>
+
+            <h3>Per-Task Pricing</h3>
+            <p>Fixed price for completing a specific job. Best for: package delivery, security patrols, one-time cleaning.</p>
+            <pre><code>Example: Deliver 10 packages = 5 SOL flat fee</code></pre>
+
+            <h3>Per-Minute Pricing</h3>
+            <p>Pay only for the time the robot is actively working. Best for: flexible tasks, variable durations.</p>
+            <pre><code>Example: Floor cleaning @ 0.1 SOL/minute</code></pre>
+
+            <h3>Per-Kilometer Pricing</h3>
+            <p>Pay based on distance traveled. Best for: delivery, patrol routes, inspection.</p>
+            <pre><code>Example: Security patrol @ 2 SOL/km</code></pre>
+
+            <div class="info-box">
+                <strong>Payment Discount:</strong> Get 20% off all rentals when paying with $ROBORIO tokens instead of SOL or USDC.
+            </div>
+        </div>
+
+        <div class="section" id="token">
+            <h2>5. $ROBORIO Token</h2>
+
+            <h3>Utility</h3>
+            <ul>
+                <li><strong>20% Discount</strong> - On all robot rentals</li>
+                <li><strong>Staking Rewards</strong> - Earn passive income</li>
+                <li><strong>Governance</strong> - Vote on platform upgrades</li>
+                <li><strong>Priority Access</strong> - Early booking for high-demand robots</li>
+            </ul>
+
+            <h3>Tokenomics (Coming Soon)</h3>
+            <p>Details will be announced when the token launches. Fair launch with transparent allocation and no presale.</p>
+
+            <h3>Buy-Back & Burn</h3>
+            <p>A portion of all platform fees collected in SOL/USDC is used to buy back $ROBORIO from the market and burn it, reducing supply over time.</p>
+        </div>
+
+        <div class="section" id="api">
+            <h2>6. API Integration</h2>
+
+            <p>Integrate Roborio into your own systems via our REST API. Perfect for:</p>
+            <ul>
+                <li>E-commerce platforms (automated delivery)</li>
+                <li>Facility management systems (cleaning & security)</li>
+                <li>Warehouse management (logistics automation)</li>
+            </ul>
+
+            <div class="info-box">
+                <strong>API Documentation:</strong> Full API docs will be available after marketplace launch. Stay tuned!
+            </div>
+        </div>
+
+        <div class="section" id="faq">
+            <h2>7. FAQ</h2>
+
+            <h3>What is Roborio?</h3>
+            <p>Roborio is a decentralized marketplace built on Solana where businesses can rent robots on-demand. Think of it as "Uber for robots."</p>
+
+            <h3>How do payments work?</h3>
+            <p>Payments are handled through Solana smart contracts. Funds are held in escrow and released to the operator once the task is completed and verified.</p>
+
+            <h3>What types of robots are available?</h3>
+            <p>Delivery robots, cleaning robots, security robots, inspection drones, and warehouse automation systems.</p>
+
+            <h3>Is the platform live?</h3>
+            <p>Roborio is currently in development. Join our waitlist to be notified when we launch!</p>
+
+            <h3>How do I buy $ROBORIO?</h3>
+            <p>Token sale details will be announced soon. Follow our social channels for updates.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 80px; padding-top: 40px; border-top: 1px solid var(--border);">
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Need more help?</p>
+            <a href="/" class="back-btn" style="display: inline-block;">Return to Homepage</a>
+        </div>
+    </div>
+</body>
+</html>

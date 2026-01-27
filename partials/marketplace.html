@@ -1,0 +1,44 @@
+<section class="section marketplace" id="marketplace" aria-labelledby="marketplace-heading">
+    <div class="section-container">
+        <div class="marketplace-header">
+            <div class="section-header" style="margin-bottom: 0;">
+                <div class="marketplace-badge marketplace-badge--live">MVP Demo</div>
+                <h2 id="marketplace-heading" class="section-title" data-i18n="theRobotsMarketplace">The Robots Marketplace</h2>
+                 <p class="section-desc" data-i18n="marketplaceDesc">Think Fiverr for robots. Operators list their robots, businesses reserve pilots fast. Pay in SOL or USDC.</p>
+            </div>
+            <div class="marketplace-actions">
+                <button class="btn-add-robot" id="addRobotBtn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    Add Robot
+                </button>
+            </div>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="marketplace-filters">
+            <button class="filter-btn active" data-category="all">All</button>
+            <button class="filter-btn" data-category="delivery">Delivery</button>
+            <button class="filter-btn" data-category="cleaning">Cleaning</button>
+            <button class="filter-btn" data-category="security">Security</button>
+            <button class="filter-btn" data-category="inspection">Inspection</button>
+            <button class="filter-btn" data-category="warehouse">Warehouse</button>
+            <button class="filter-btn" data-category="agriculture">Agriculture</button>
+            <button class="filter-btn" data-category="healthcare">Healthcare</button>
+            <button class="filter-btn" data-category="hospitality">Hospitality</button>
+        </div>
+        <div class="marketplace-grid" id="robotsGrid">
+            <!-- Robots will be added dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="marketplace-empty" id="marketplaceEmpty">
+            <div class="empty-icon">🤖</div>
+            <h3 class="empty-title">No robots listed yet</h3>
+            <p class="empty-desc">Be the first to list your robot on the marketplace!</p>
+            <button class="btn-add-robot" id="addRobotEmptyBtn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                Add Robot
+            </button>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,37 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.vs/
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.npmrc
+
+# Next / Vite / bundlers
+.next/
+out/
+.parcel-cache/
+.turbo/
+.cache/
+
+# Rust / Java etc
+target/
+
+# Env / secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+
+# Misc
+PROJECT_STATE.md
+.vercel/

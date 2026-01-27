@@ -1,0 +1,20 @@
+[package]
+name = "roborio-escrow"
+version = "0.1.0"
+description = "Roborio Robot Rental Escrow Program"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "roborio_escrow"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.32.1"
+anchor-spl = "0.32.1"

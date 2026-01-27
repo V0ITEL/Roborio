@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+
+    <!-- Content Security Policy  -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://terminal.jup.ag https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.solana.com https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://terminal.jup.ag https://*.supabase.co https://cdn.jsdelivr.net https://unpkg.com; frame-src 'self' https://terminal.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+
+    <!-- Resource Hints for Performance -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://terminal.jup.ag">
+
+    <title>Roborio - Robot-as-a-Service Marketplace on Solana</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Roborio is the first decentralized marketplace for robot rentals on Solana. Rent delivery, cleaning, security robots per-task, per-minute, or per-km. Powered by $ROBORIO token.">
+    <meta name="keywords" content="Roborio, robot rental, RaaS, Solana, blockchain, delivery robots, cleaning robots, $ROBORIO, decentralized marketplace, Web3, DeFi, smart contracts, autonomous robots">
+    <meta name="author" content="Roborio">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+    <meta name="rating" content="general">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.roborio.xyz">
+
+    <!-- Sitemap -->
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+    
+    <!-- Open Graph (Enhanced) -->
+    <meta property="og:title" content="Roborio - Robot-as-a-Service Marketplace on Solana">
+    <meta property="og:description" content="The first decentralized marketplace for robot rentals. Pay per-task, per-minute, or per-km. Powered by $ROBORIO token on Solana blockchain.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.roborio.xyz">
+    <meta property="og:image" content="https://www.roborio.xyz/og-image.png">
+    <meta property="og:image:secure_url" content="https://www.roborio.xyz/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Roborio - Decentralized Robot Rental Marketplace">
+    <meta property="og:site_name" content="Roborio">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card (Enhanced) -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Roborio - Robot-as-a-Service on Solana">
+    <meta name="twitter:description" content="Rent delivery, cleaning, security robots per-task, per-minute, or per-km. Powered by $ROBORIO on Solana.">
+    <meta name="twitter:image" content="https://www.roborio.xyz/og-image.png">
+    <meta name="twitter:image:alt" content="Roborio - Robot Rental Marketplace">
+    <meta name="twitter:site" content="@Robori0">
+    <meta name="twitter:creator" content="@Robori0">
+    <meta name="twitter:domain" content="roborio.xyz">
+    
+    <!-- Favicon - Full Set -->
+    <!-- Standard favicon -->
+    <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48x48.png">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/favicon-180x180.png">
+
+    <!-- Android/Chrome -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/favicon-512x512.png">
+
+    <!-- SVG favicon (modern browsers) -->
+    <link rel="icon" type="image/svg+xml" href="icons/roborio-favicon.svg">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="msapplication-TileColor" content="#0a0a0a">
+    
+    <!-- Apple PWA meta tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Roborio">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/hero.css">
+    <link rel="stylesheet" href="styles/marketplace.css">
+    <link rel="stylesheet" href="styles/faq.css">
+    <link rel="stylesheet" href="styles/waitlist.css">
+    
+    <!-- JSON-LD Structured Data (Enhanced) -->
+     <script src="scripts/seo.js" defer></script>
+
+
+   <!-- -->
+
+</head>
+<body>
+    <!-- Scroll Progress Indicator -->
+    <div class="scroll-indicator" id="scrollIndicator"></div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-logo">
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                <rect x="10" y="12" width="28" height="24" rx="4" fill="#0a0a0a" stroke="#10b981" stroke-width="1.5"/>
+                <line x1="24" y1="12" x2="24" y2="6" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="24" cy="5" r="2" fill="#10b981"/>
+                <line x1="10" y1="16" x2="6" y2="12" stroke="#10b981" stroke-width="1" stroke-linecap="round"/>
+                <line x1="38" y1="16" x2="42" y2="12" stroke="#10b981" stroke-width="1" stroke-linecap="round"/>
+                <rect x="14" y="18" width="8" height="6" rx="1" fill="#10b981"/>
+                <rect x="26" y="18" width="8" height="6" rx="1" fill="#10b981"/>
+                <rect x="16" y="28" width="16" height="4" rx="1" fill="#0a0a0a" stroke="#10b981" stroke-width="0.75"/>
+                <line x1="18" y1="30" x2="20" y2="30" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="22" y1="30" x2="26" y2="30" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="28" y1="30" x2="30" y2="30" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="20" y="36" width="8" height="4" rx="1" fill="#0a0a0a" stroke="#10b981" stroke-width="1"/>
+            </svg>
+        </div>
+        <div class="preloader-terminal">
+            <div class="preloader-terminal-header">
+                <span class="preloader-terminal-dot red"></span>
+                <span class="preloader-terminal-dot yellow"></span>
+                <span class="preloader-terminal-dot green"></span>
+                <span class="preloader-terminal-title">roborio-terminal</span>
+            </div>
+            <div class="preloader-terminal-content" id="terminalContent">
+                <!-- Lines will be added by JS -->
+            </div>
+        </div>
+        <div class="preloader-bar">
+            <div class="preloader-progress" id="preloaderProgress"></div>
+        </div>
+        <div class="preloader-percent" id="preloaderPercent">0%</div>
+        <div class="preloader-status" id="preloaderStatus">Initializing...</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-dot" id="cursorDot"></div>
+
+    <!-- Skip to Content Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Navigation -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="#" class="logo" aria-label="Roborio - Home">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                        <rect x="10" y="12" width="28" height="24" rx="4" fill="#0a0a0a" stroke="#10b981" stroke-width="1.5"/>
+                        <line x1="24" y1="12" x2="24" y2="6" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="24" cy="5" r="2" fill="#10b981" class="logo-pulse"/>
+                        <line x1="10" y1="16" x2="6" y2="12" stroke="#10b981" stroke-width="1" stroke-linecap="round"/>
+                        <line x1="38" y1="16" x2="42" y2="12" stroke="#10b981" stroke-width="1" stroke-linecap="round"/>
+                        <rect x="14" y="18" width="8" height="6" rx="1" fill="#10b981" class="logo-eye"/>
+                        <rect x="26" y="18" width="8" height="6" rx="1" fill="#10b981" class="logo-eye"/>
+                        <rect x="16" y="28" width="16" height="4" rx="1" fill="#0a0a0a" stroke="#10b981" stroke-width="0.75"/>
+                        <line x1="18" y1="30" x2="20" y2="30" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="22" y1="30" x2="26" y2="30" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="28" y1="30" x2="30" y2="30" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                        <rect x="20" y="36" width="8" height="4" rx="1" fill="#0a0a0a" stroke="#10b981" stroke-width="1"/>
+                    </svg>
+                </div>
+                Roborio
+            </a>
+            
+            <!-- Desktop Nav -->
+            <div class="nav-buttons">
+                <button class="btn-wallet" id="connectWallet" aria-label="Connect wallet">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <rect x="2" y="6" width="20" height="14" rx="2"/>
+                        <path d="M16 14h.01"/>
+                        <path d="M2 10h20"/>
+                    </svg>
+                    <span data-i18n="connectWallet">Connect Wallet</span>
+                </button>
+                <a href="docs.html" class="btn btn-secondary" data-i18n="viewDocs">VIEW DOCS</a>
+            </div>
+
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" aria-hidden="true"></div>
+
+    <!-- Mobile Menu Panel -->
+    <aside class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
+        <div class="mobile-menu-header">
+            <span class="mobile-menu-title">Menu</span>
+            <button class="mobile-menu-close" id="mobileMenuClose" type="button" aria-label="Close menu">✕</button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="#usecases">Use Cases</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#marketplace">Marketplace</a>
+            <a href="#roadmap">Roadmap</a>
+            <a href="#faq">FAQ</a>
+        </nav>
+        <div class="mobile-menu-buttons">
+            <button class="btn btn-wallet-mobile" id="connectWalletMobile" aria-label="Connect wallet">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <rect x="2" y="6" width="20" height="14" rx="2"/>
+                    <path d="M16 14h.01"/>
+                    <path d="M2 10h20"/>
+                </svg>
+                <span data-i18n="connectWallet">Connect Wallet</span>
+            </button>
+            <a href="docs.html" class="btn btn-secondary" data-i18n="viewDocs">View Docs</a>
+        </div>
+        <div class="mobile-menu-social">
+        </div>
+    </aside>
+
+    <main id="main-content">
+          <section class="hero" id="heroSection">
+            <!-- Grid Background -->
+            <div class="hero-bg" aria-hidden="true">
+                <!-- CSS Grid Pattern -->
+                <div class="hero-grid-bg"></div>
+                <!-- Gradient overlay -->
+                <div class="hero-gradient-overlay"></div>
+                <!-- Vignette -->
+                <div class="hero-vignette"></div>
+                <!-- ASCII Robot -->
+                <div id="robotContainer" class="hero-robot">
+                    <!-- Robot Loading State -->
+                    <div id="robotLoading" class="robot-loading" style="display: none;">
+                        <div class="robot-spinner"></div>
+                        <p>Loading 3D Model...</p>
+                    </div>
+                    <!-- Robot Error State -->
+                    <div id="robotError" class="robot-error" style="display: none;">
+                        <p>⚠️ Failed to load robot model</p>
+                        <button class="btn btn-secondary btn-small" id="retryRobotLoad">Retry</button>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-content">
+                <h1 class="parallax-layer" data-speed="0.05"><span data-i18n="heroTitle">Robot-as-a-Service Marketplace on</span> <span class="highlight" id="solanaText">Solana</span></h1>
+                <p class="hero-description parallax-layer" data-speed="0.03" data-i18n="heroDesc">Roborio is an MVP marketplace demo for robot rentals. Discover verified operators, explore live listings, and reserve a pilot in minutes — no long sales cycles.</p>
+                <div class="hero-buttons parallax-layer" data-speed="0.02">
+                    <a href="#waitlist" class="btn btn-primary btn-glitch btn-shine btn-pulse" id="heroWaitlistCta" data-i18n="joinWaitlist">Join Waitlist</a>
+                    <a href="#marketplace" class="btn btn-secondary" data-i18n="viewDemo">View Demo</a>
+                </div>
+                <div class="hero-stats parallax-layer" data-speed="0.01">
+                    <div class="hero-stat">
+                        <div class="hero-stat-value"><span class="accent">MVP</span></div>
+                        <div class="hero-stat-label" data-i18n="demoStatus">Demo Live</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value"><span class="accent">Curated</span></div>
+                        <div class="hero-stat-label" data-i18n="operatorReview">Operator Review</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value"><span class="accent">Fast</span></div>
+                        <div class="hero-stat-label" data-i18n="reservationFlow">Reservations</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+         <section class="usecases section" id="usecases" aria-labelledby="usecases-heading">
+            <div class="section-header" data-aos="fade-up">
+                <div class="section-tag" data-i18n="useCases">USECASES</div>
+                <h2 id="usecases-heading" class="section-title" data-i18n="useCasesTitle">Robots for Every Industry</h2>
+                <p class="section-desc" data-i18n="useCasesDesc">From last-mile delivery to industrial inspection, Roborio connects you with the right robot for any task. Pay only for what you use.</p>
+            </div>
+            <div class="usecases-scroll" id="usecasesScroll" role="region" aria-label="Use cases carousel">
+                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🚚</span></div><div class="usecase-body"><h3 data-i18n="lastMileDelivery">Last-Mile Delivery</h3><p data-i18n="lastMileDeliveryDesc">Autonomous robots delivering packages, groceries, and food directly to customers. Pay per-km or per-delivery.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🧹</span></div><div class="usecase-body"><h3 data-i18n="commercialCleaning">Commercial Cleaning</h3><p data-i18n="commercialCleaningDesc">Industrial floor scrubbers, vacuum robots, and sanitization units for malls, offices, and warehouses.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🛡️</span></div><div class="usecase-body"><h3 data-i18n="securityPatrol">Security Patrol</h3><p data-i18n="securityPatrolDesc">24/7 autonomous patrol robots with cameras, sensors, and real-time alerts. Perfect for large facilities.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🔍</span></div><div class="usecase-body"><h3 data-i18n="infrastructureInspection">Infrastructure Inspection</h3><p data-i18n="infrastructureInspectionDesc">Drones and crawlers for inspecting pipelines, power lines, bridges, and buildings. Reduce risk, save costs.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">📦</span></div><div class="usecase-body"><h3 data-i18n="warehouseAutomation">Warehouse Automation</h3><p data-i18n="warehouseAutomationDesc">Robotic arms and AGVs for picking, packing, and inventory management. Scale up or down instantly.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🌾</span></div><div class="usecase-body"><h3 data-i18n="agriculturalRobots">Agricultural Robots</h3><p data-i18n="agriculturalRobotsDesc">Autonomous farming robots for planting, monitoring, and harvesting. Perfect for seasonal demands.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🏥</span></div><div class="usecase-body"><h3 data-i18n="healthcareAssistants">Healthcare Assistants</h3><p data-i18n="healthcareAssistantsDesc">Medical delivery robots and patient assistance units for hospitals and care facilities.</p></div></article>
+            </div>
+        </section>
+
+        <section class="section architecture" id="architecture" aria-labelledby="architecture-heading">
+            <div class="section-container">
+                <div class="section-header" data-aos="fade-up">
+                    <div class="section-tag" data-i18n="architecture">Architecture</div>
+                    <h2 id="architecture-heading" class="section-title" data-i18n="architectureTitle">The Three Pillars</h2>
+                    <p class="section-desc" data-i18n="architectureDesc">Roborio connects robot operators with businesses needing automation. Our decentralized infrastructure ensures transparency, fair pricing, and instant settlement.</p>
+                </div>
+                <div class="pillars-grid" data-aos="fade-up" data-aos-delay="200">
+                    <article class="pillar-card">
+                        <div class="pillar-layer" data-i18n="layer1">Layer 1</div>
+                        <div class="pillar-name" data-i18n="pillar1Name">Robots</div>
+                        <h3 class="pillar-title" data-i18n="pillar1Title">Physical Robot Fleet</h3>
+                        <dl class="pillar-dl">
+                            <dt data-i18n="deliveryRobots">Delivery Robots</dt><dd data-i18n="deliveryRobotsDesc">Autonomous last-mile delivery for packages and food</dd>
+                            <dt data-i18n="cleaningRobots">Cleaning Robots</dt><dd data-i18n="cleaningRobotsDesc">Industrial scrubbers, vacuums, and sanitizers</dd>
+                            <dt data-i18n="securityBots">Security Bots</dt><dd data-i18n="securityBotsDesc">Patrol units with cameras and sensors</dd>
+                            <dt data-i18n="inspectionDrones">Inspection Drones</dt><dd data-i18n="inspectionDronesDesc">Aerial and ground inspection systems</dd>
+                            <dt data-i18n="warehouseAGVs">Warehouse AGVs</dt><dd data-i18n="warehouseAGVsDesc">Automated guided vehicles for logistics</dd>
+                        </dl>
+                    </article>
+                    <article class="pillar-card">
+                        <div class="pillar-layer" data-i18n="layer2">Layer 2</div>
+                        <div class="pillar-name" data-i18n="pillar2Name">Pricing</div>
+                        <h3 class="pillar-title" data-i18n="pillar2Title">Flexible Payment Models</h3>
+                        <dl class="pillar-dl">
+                            <dt data-i18n="perTask">Per-Task</dt><dd data-i18n="perTaskDesc">Pay only when a job is completed successfully</dd>
+                            <dt data-i18n="perMinute">Per-Minute</dt><dd data-i18n="perMinuteDesc">Time-based billing for hourly rentals</dd>
+                            <dt data-i18n="perKilometer">Per-Kilometer</dt><dd data-i18n="perKilometerDesc">Distance-based pricing for delivery robots</dd>
+                            <dt data-i18n="subscription">Subscription</dt><dd data-i18n="subscriptionDesc">Monthly plans for regular usage</dd>
+                            <dt data-i18n="enterprise">Enterprise</dt><dd data-i18n="enterpriseDesc">Custom pricing for large deployments</dd>
+                        </dl>
+                    </article>
+                    <article class="pillar-card">
+                        <div class="pillar-layer" data-i18n="layer3">Layer 3</div>
+                        <div class="pillar-name" data-i18n="pillar3Name">Platform</div>
+                        <h3 class="pillar-title" data-i18n="pillar3Title">Decentralized Infrastructure</h3>
+                        <dl class="pillar-dl">
+                            <dt>REST API</dt><dd data-i18n="restApiDesc">Integrate robot rentals into your systems</dd>
+                            <dt data-i18n="ratingSystem">Rating System</dt><dd data-i18n="ratingSystemDesc">Transparent reviews for operators and robots</dd>
+                            <dt data-i18n="smartContracts">Smart Contracts</dt><dd data-i18n="smartContractsDesc">Automated escrow and payment settlement</dd>
+                            <dt>$ROBORIO Token</dt><dd data-i18n="roborioTokenDesc">20% discount, staking rewards, governance</dd>
+                            <dt data-i18n="realTimeTracking">Real-time Tracking</dt><dd data-i18n="realTimeTrackingDesc">Live location and status updates</dd>
+                        </dl>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section marketplace" id="marketplace" aria-labelledby="marketplace-heading">
+            <div class="section-container">
+                <div class="marketplace-header">
+                    <div class="section-header" style="margin-bottom: 0;">
+                        <div class="marketplace-badge marketplace-badge--live">MVP Demo</div>
+                        <h2 id="marketplace-heading" class="section-title" data-i18n="theRobotsMarketplace">The Robots Marketplace</h2>
+                         <p class="section-desc" data-i18n="marketplaceDesc">Think Fiverr for robots. Operators list their robots, businesses reserve pilots fast. Pay in SOL or USDC.</p>
+                    </div>
+                    <div class="marketplace-actions">
+                        <button class="btn-add-robot" id="addRobotBtn">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            Add Robot
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="marketplace-filters">
+                    <button class="filter-btn active" data-category="all">All</button>
+                    <button class="filter-btn" data-category="delivery">Delivery</button>
+                    <button class="filter-btn" data-category="cleaning">Cleaning</button>
+                    <button class="filter-btn" data-category="security">Security</button>
+                    <button class="filter-btn" data-category="inspection">Inspection</button>
+                    <button class="filter-btn" data-category="warehouse">Warehouse</button>
+                    <button class="filter-btn" data-category="agriculture">Agriculture</button>
+                    <button class="filter-btn" data-category="healthcare">Healthcare</button>
+                    <button class="filter-btn" data-category="hospitality">Hospitality</button>
+                </div>
+                <div class="marketplace-grid" id="robotsGrid">
+                    <!-- Robots will be added dynamically -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="marketplace-empty" id="marketplaceEmpty">
+                    <div class="empty-icon">🤖</div>
+                    <h3 class="empty-title">No robots listed yet</h3>
+                    <p class="empty-desc">Be the first to list your robot on the marketplace!</p>
+                    <button class="btn-add-robot" id="addRobotEmptyBtn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        Add Robot
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        {{> roadmap}}
+
+        {{> faq}}
+
+        {{> waitlist}}
+    </main>
+
+    {{> footer}}
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+    </button>
+
+    <!-- Cookie Banner -->
+    <div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent">
+        <p class="cookie-banner-text">
+            <span data-i18n="cookieText">We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.</span>
+            <a href="privacy.html" data-i18n="cookieLearnMore">Learn more</a>
+        </p>
+        <div class="cookie-banner-buttons">
+            <button class="cookie-btn cookie-btn-decline" id="cookieDecline" data-i18n="cookieDecline">Decline</button>
+            <button class="cookie-btn cookie-btn-accept" id="cookieAccept" data-i18n="cookieAccept">Accept</button>
+        </div>
+    </div>
+
+    <!-- Wallet Modal -->
+    <div class="modal-overlay" id="walletModalOverlay" aria-hidden="true"></div>
+    <div class="modal wallet-modal" id="walletModal" role="dialog" aria-modal="true" aria-labelledby="walletModalTitle" aria-hidden="true">
+        <div class="modal-header">
+            <h3 class="modal-title" id="walletModalTitle" data-i18n="selectWallet">Select Wallet</h3>
+            <button class="modal-close" id="walletModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="wallet-list">
+                <button class="wallet-option" data-wallet="phantom" aria-label="Connect with Phantom wallet (Recommended)">
+                    <img src="icons/phantom.svg" alt="Phantom" width="40" height="40" style="border-radius: 10px;" loading="lazy">
+                    <span>Phantom</span>
+                    <span class="wallet-tag">Recommended</span>
+                </button>
+                <button class="wallet-option" data-wallet="solflare" aria-label="Connect with Solflare wallet">
+                    <img src="icons/solflare.svg" alt="Solflare" width="40" height="40" style="border-radius: 10px;" loading="lazy">
+                    <span>Solflare</span>
+                </button>
+                <button class="wallet-option" data-wallet="backpack" aria-label="Connect with Backpack wallet">
+                    <img src="icons/backpack.svg" alt="Backpack" width="40" height="40" loading="lazy">
+                    <span>Backpack</span>
+                </button>
+            </div>
+            <p class="wallet-note">By connecting, you agree to our <a href="terms.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Terms of Service</a></p>
+        </div>
+    </div>
+
+    <!-- Connected Wallet Dropdown -->
+    <div class="wallet-dropdown-overlay" id="walletDropdownOverlay" aria-hidden="true"></div>
+    <div class="wallet-dropdown" id="walletDropdown" aria-hidden="true">
+        <div class="wallet-dropdown-header">
+            <span class="wallet-dropdown-label" data-i18n="connected">Connected</span>
+            <span class="wallet-dropdown-address" id="walletAddress">...</span>
+        </div>
+        <div class="wallet-dropdown-balance">
+            <span class="wallet-dropdown-sol" id="walletBalance">0.00 SOL</span>
+            <span class="wallet-dropdown-usd" id="walletBalanceUsd">≈ $0.00</span>
+        </div>
+        <div class="wallet-dropdown-actions">
+            <button class="wallet-dropdown-btn buy-btn" id="openBuyModal" data-i18n="buyRoborio">Buy $ROBORIO</button>
+            <button class="wallet-dropdown-btn disconnect-btn" id="disconnectWallet" data-i18n="disconnect">Disconnect</button>
+        </div>
+    </div>
+
+    <!-- Buy Modal (Jupiter Terminal) -->
+    <div class="modal-overlay" id="buyModalOverlay" aria-hidden="true"></div>
+    <div class="modal buy-modal" id="buyModal" role="dialog" aria-modal="true" aria-labelledby="buyModalTitle" aria-hidden="true">
+        <div class="modal-header">
+            <h3 class="modal-title" id="buyModalTitle" data-i18n="buyRoborioTitle">Buy $ROBORIO</h3>
+            <button class="modal-close" id="buyModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="buy-container">
+                <!-- Token not launched message -->
+                <div class="buy-placeholder" id="buyPlaceholder">
+                    <div class="buy-placeholder-icon">🚀</div>
+                    <h4 data-i18n="tokenNotLaunched">Token Not Yet Launched</h4>
+                    <p data-i18n="tokenNotLaunchedDesc">$ROBORIO token will be available for purchase soon. Join our waitlist to be notified when we launch!</p>
+                    <a href="#waitlist" class="btn btn-primary" id="buyWaitlistBtn" data-i18n="joinWaitlist">Join Waitlist</a>
+                </div>
+                
+                <!-- Jupiter Terminal Preview -->
+                <div id="jupiterPreview" class="jupiter-preview" style="display: none;">
+                    <div class="jupiter-terminal">
+                        <div class="jupiter-header">
+                            <span class="jupiter-logo">⚡</span>
+                            <span>Jupiter</span>
+                            <span class="jupiter-badge">Powered by Jupiter</span>
+                        </div>
+                        
+                        <div class="jupiter-swap-box">
+                            <div class="jupiter-label">You're paying</div>
+                            <div class="jupiter-input-row">
+                                <input type="number" class="jupiter-input" placeholder="0.00" id="jupiterFromAmount" aria-label="Amount to pay" autocomplete="off">
+                                <button class="jupiter-token-select" id="jupiterFromToken" aria-label="Select token to pay">
+                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle fill='%239945FF' cx='64' cy='64' r='64'/%3E%3Cpath fill='%2314F195' d='M108.5 64.5c0 24.3-19.7 44-44 44s-44-19.7-44-44 19.7-44 44-44 44 19.7 44 44z' opacity='.5'/%3E%3C/svg%3E" alt="SOL" width="24" height="24">
+                                    <span>SOL</span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                            </div>
+                            <div class="jupiter-balance">Balance: <span id="jupiterFromBalance">0.00</span></div>
+                        </div>
+                        
+                        <div class="jupiter-swap-arrow">
+                            <button class="jupiter-swap-btn" aria-label="Swap direction">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <polyline points="19 12 12 19 5 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="jupiter-swap-box">
+                            <div class="jupiter-label">To receive</div>
+                            <div class="jupiter-input-row">
+                                <input type="number" class="jupiter-input" placeholder="0.00" id="jupiterToAmount" readonly aria-label="Amount to receive" autocomplete="off">
+                                <button class="jupiter-token-select jupiter-token-roborio">
+                                    <div class="jupiter-roborio-icon">🤖</div>
+                                    <span>$ROBORIO</span>
+                                </button>
+                            </div>
+                            <div class="jupiter-rate">1 SOL ≈ <span id="jupiterRate">~</span> ROBORIO</div>
+                        </div>
+                        
+                        <div class="jupiter-details">
+                            <div class="jupiter-detail-row">
+                                <span>Rate</span>
+                                <span id="jupiterExchangeRate">-</span>
+                            </div>
+                            <div class="jupiter-detail-row">
+                                <span>Price Impact</span>
+                                <span class="jupiter-green">&lt; 0.01%</span>
+                            </div>
+                            <div class="jupiter-detail-row">
+                                <span>Minimum received</span>
+                                <span id="jupiterMinReceived">-</span>
+                            </div>
+                        </div>
+                        
+                        <button class="jupiter-swap-execute" id="jupiterSwapBtn" disabled>
+                            <span data-i18n="connectWalletFirst">Connect Wallet First</span>
+                        </button>
+                        
+                        <div class="jupiter-footer">
+                            <span>🔒 Secure swap via Jupiter Aggregator</span>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <div id="jupiterTerminal" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Add Robot Modal -->
+    <div class="marketplace-modal" id="addRobotModal">
+        <div class="mp-modal-overlay"></div>
+        <div class="mp-modal-content mp-modal-content--large">
+            <button class="mp-modal-close" aria-label="Close modal">&times;</button>
+            <div class="mp-modal-header">
+                <h3 class="mp-modal-title">Add Your Robot</h3>
+                <p class="mp-modal-subtitle">List your robot on the marketplace and start earning</p>
+            </div>
+            <form class="robot-form" id="addRobotForm">
+                <!-- Basic Info -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Basic Information</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="robotName">Robot Name <span class="form-required">*</span></label>
+                            <input type="text" class="form-input" id="robotName" name="name" placeholder="e.g. SpeedBot X1" required autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="robotCategory">Category <span class="form-required">*</span></label>
+                            <select class="form-select" id="robotCategory" name="category" required>
+                                <option value="">Select category</option>
+                                <option value="delivery">Delivery</option>
+                                <option value="cleaning">Cleaning</option>
+                                <option value="security">Security</option>
+                                <option value="inspection">Inspection</option>
+                                <option value="warehouse">Warehouse</option>
+                                <option value="agriculture">Agriculture</option>
+                                <option value="healthcare">Healthcare</option>
+                                <option value="hospitality">Hospitality</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="robotDescription">Description <span class="form-required">*</span></label>
+                        <textarea class="form-textarea" id="robotDescription" name="description" placeholder="Describe your robot's capabilities..." rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="robotImage">Robot Photo <span class="form-required">*</span></label>
+                        <div class="form-upload" id="imageUpload">
+                            <input type="file" id="robotImage" name="image" accept="image/*" hidden>
+                            <div class="upload-placeholder" id="uploadPlaceholder">
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M24 32V16m0 0l-8 8m8-8l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="6" width="36" height="36" rx="4" stroke="currentColor" stroke-width="2"/></svg>
+                                <span>Click to upload or drag & drop</span>
+                                <span class="upload-hint">PNG, JPG up to 5MB</span>
+                            </div>
+                            <div class="upload-preview" id="uploadPreview" hidden>
+                                <img id="previewImg" src="" alt="Preview">
+                                <button type="button" class="upload-remove" id="removeImage">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Pricing</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="robotPrice">Price <span class="form-required">*</span></label>
+                            <input type="number" class="form-input" id="robotPrice" name="price" placeholder="0.00" step="0.01" min="0" required autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="priceUnit">Price Unit <span class="form-required">*</span></label>
+                            <select class="form-select" id="priceUnit" name="priceUnit" required>
+                                <option value="hour">per hour</option>
+                                <option value="day">per day</option>
+                                <option value="km">per km</option>
+                                <option value="task">per task</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Specs -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Technical Specifications <span class="form-optional">(optional)</span></h4>
+                    <div class="form-grid form-grid--3">
+                        <div class="form-group">
+                            <label class="form-label" for="robotSpeed">Max Speed</label>
+                            <input type="text" class="form-input" id="robotSpeed" name="speed" placeholder="e.g. 20 km/h" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="robotPayload">Payload</label>
+                            <input type="text" class="form-input" id="robotPayload" name="payload" placeholder="e.g. 50 kg" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="robotBattery">Battery Life</label>
+                            <input type="text" class="form-input" id="robotBattery" name="battery" placeholder="e.g. 8 hours" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location & Contact -->
+                <div class="form-section">
+                    <h4 class="form-section-title">Location & Contact</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="robotLocation">Location <span class="form-optional">(optional)</span></label>
+                            <input type="text" class="form-input" id="robotLocation" name="location" placeholder="e.g. San Francisco, USA" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="operatorContact">Contact <span class="form-required">*</span></label>
+                            <input type="text" class="form-input" id="operatorContact" name="contact" placeholder="Email, Phone or Telegram" required autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelAddRobot">Cancel</button>
+                    <button type="submit" class="btn-primary" id="submitRobot">
+                        <span class="btn-text">List Robot</span>
+                        <span class="btn-loading" hidden>
+                            <svg class="spinner" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rent Robot Modal -->
+    <div class="marketplace-modal" id="rentRobotModal">
+        <div class="mp-modal-overlay"></div>
+        <div class="mp-modal-content">
+            <button class="mp-modal-close" aria-label="Close modal">&times;</button>
+            <div class="mp-modal-header">
+                <h3 class="mp-modal-title">Rent Robot</h3>
+                <p class="mp-modal-subtitle" id="rentRobotName">SpeedBot X1</p>
+            </div>
+            <div class="rent-details">
+                <div class="rent-robot-info">
+                    <div class="rent-robot-image" id="rentRobotImage"></div>
+                    <div class="rent-robot-meta">
+                        <span class="rent-category" id="rentCategory">Delivery</span>
+                        <p class="rent-description" id="rentDescription">Fast autonomous delivery robot</p>
+                    </div>
+                </div>
+
+                <div class="rent-pricing">
+                    <div class="rent-price-row">
+                        <span>Rental Price</span>
+                        <span class="rent-price" id="rentPrice">$2.50/km</span>
+                    </div>
+                    <div class="rent-price-row rent-price-row--total">
+                        <span>Total (Escrow)</span>
+                        <span class="rent-total" id="rentTotal">$2.50</span>
+                    </div>
+                </div>
+
+                <div class="rent-payment">
+                    <span class="form-label" id="paymentMethodLabel">Pay with</span>
+                    <div class="payment-options" role="radiogroup" aria-labelledby="paymentMethodLabel">
+                        <label class="payment-option" for="paymentSOL">
+                            <input type="radio" name="paymentMethod" id="paymentSOL" value="SOL" checked autocomplete="off">
+                            <span class="payment-option-content">
+                                <span class="payment-icon">◎</span>
+                                <span class="payment-name">SOL</span>
+                            </span>
+                        </label>
+                        <label class="payment-option" for="paymentUSDC">
+                            <input type="radio" name="paymentMethod" id="paymentUSDC" value="USDC" autocomplete="off">
+                            <span class="payment-option-content">
+                                <span class="payment-icon">$</span>
+                                <span class="payment-name">USDC</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="rent-escrow-info">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <span>Funds held in escrow until task completion</span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancelRent">Cancel</button>
+                <button type="button" class="btn-primary" id="confirmRent">
+                    <span class="btn-text">Pay & Rent</span>
+                    <span class="btn-loading" hidden>
+                        <svg class="spinner" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal (After Rent) -->
+    <div class="marketplace-modal" id="successModal">
+        <div class="mp-modal-overlay"></div>
+        <div class="mp-modal-content mp-modal-content--small">
+            <div class="success-icon">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#10b981" stroke-width="4"/><path d="M20 32l8 8 16-16" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 class="mp-modal-title">Payment Successful!</h3>
+            <p class="mp-modal-subtitle">Funds are now held in escrow</p>
+
+            <div class="operator-contact" id="operatorContact">
+                <h4>Operator Contact</h4>
+                <div class="contact-info">
+                    <div class="contact-row">
+                        <span class="contact-value contact-main" id="operatorContactValue">operator@email.com</span>
+                    </div>
+                </div>
+                <p class="contact-note">Contact the operator to arrange robot delivery and task details.</p>
+            </div>
+
+            <button type="button" class="btn-primary btn-full" id="closeSuccess">Done</button>
+        </div>
+    </div>
+
+    <!-- Robot Added Success Modal -->
+    <div class="marketplace-modal" id="robotAddedModal">
+        <div class="mp-modal-overlay"></div>
+        <div class="mp-modal-content mp-modal-content--small">
+            <div class="success-icon">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#10b981" stroke-width="4"/><path d="M20 32l8 8 16-16" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 class="mp-modal-title">Robot Listed!</h3>
+            <p class="mp-modal-subtitle">Your robot is now available on the marketplace</p>
+            <button type="button" class="btn-primary btn-full" id="closeRobotAdded">Done</button>
+        </div>
+    </div>
+
+    <!-- Robot Add Error Modal -->
+    <div class="marketplace-modal" id="robotErrorModal">
+        <div class="mp-modal-overlay"></div>
+        <div class="mp-modal-content mp-modal-content--small">
+            <div class="error-icon">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#ef4444" stroke-width="4"/><path d="M24 24l16 16M40 24L24 40" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/></svg>
+            </div>
+            <h3 class="mp-modal-title">Failed to Add Robot</h3>
+            <p class="mp-modal-subtitle" id="robotErrorMessage">Something went wrong. Please try again.</p>
+            <button type="button" class="btn-primary btn-full" id="closeRobotError">Try Again</button>
+        </div>
+    </div>
+
+        <!-- Delete Confirmation Modal -->
+    <div class="marketplace-modal" id="deleteRobotModal">
+        <div class="mp-modal-overlay"></div>
+        <div class="mp-modal-content mp-modal-content--small">
+            <div class="error-icon">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#ef4444" stroke-width="4"/><path d="M20 24h24M38 24V20a2 2 0 00-2-2h-8a2 2 0 00-2 2v4M26 30v12M32 30v12M38 30v12M22 24v20a2 2 0 002 2h16a2 2 0 002-2V24" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 class="mp-modal-title">Delete Robot?</h3>
+            <p class="mp-modal-subtitle">Are you sure you want to delete "<span id="deleteRobotName">Robot Name</span>"? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="cancelDelete">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmDelete">
+                    <span class="btn-text">Delete</span>
+                    <span class="btn-loading" hidden><span class="spinner"></span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="scripts/main.js"></script>
+    <script src="i18n.js"></script>
+</body>
+</html>

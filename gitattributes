@@ -1,0 +1,77 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.js text eol=lf
+*.mjs text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Config files
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.env.example text eol=lf
+*.config.js text eol=lf
+*.config.mjs text eol=lf
+
+# Documentation
+*.txt text eol=lf
+LICENSE text eol=lf
+README text eol=lf
+
+# Graphics
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.webp binary
+
+# 3D Models
+*.glb binary
+*.gltf text eol=lf
+*.obj text eol=lf
+*.fbx binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+
+# Video
+*.mp4 binary
+*.mov binary
+*.webm binary
+
+# Audio
+*.mp3 binary
+*.wav binary
+*.ogg binary
+
+# Linguist overrides (for GitHub language stats)
+*.html linguist-detectable=true
+*.css linguist-detectable=false
+public/index.html linguist-documentation=false
+VERCEL_DEPLOY_GUIDE.md linguist-documentation
+PRODUCTION_CHECKLIST.md linguist-documentation

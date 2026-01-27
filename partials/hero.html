@@ -1,0 +1,46 @@
+<section class="hero" id="heroSection">
+    <!-- Grid Background -->
+    <div class="hero-bg" aria-hidden="true">
+        <!-- CSS Grid Pattern -->
+        <div class="hero-grid-bg"></div>
+        <!-- Gradient overlay -->
+        <div class="hero-gradient-overlay"></div>
+        <!-- Vignette -->
+        <div class="hero-vignette"></div>
+        <!-- ASCII Robot -->
+        <div id="robotContainer" class="hero-robot">
+            <!-- Robot Loading State -->
+            <div id="robotLoading" class="robot-loading" style="display: none;">
+                <div class="robot-spinner"></div>
+                <p>Loading 3D Model...</p>
+            </div>
+            <!-- Robot Error State -->
+            <div id="robotError" class="robot-error" style="display: none;">
+                <p>⚠️ Failed to load robot model</p>
+                <button class="btn btn-secondary btn-small" id="retryRobotLoad">Retry</button>
+            </div>
+        </div>
+    </div>
+    <div class="hero-content">
+        <h1 class="parallax-layer" data-speed="0.05"><span data-i18n="heroTitle">Robot-as-a-Service Marketplace on</span> <span class="highlight" id="solanaText">Solana</span></h1>
+        <p class="hero-description parallax-layer" data-speed="0.03" data-i18n="heroDesc">Roborio is an MVP marketplace demo for robot rentals. Discover verified operators, explore live listings, and reserve a pilot in minutes — no long sales cycles.</p>
+        <div class="hero-buttons parallax-layer" data-speed="0.02">
+            <a href="#waitlist" class="btn btn-primary btn-glitch btn-shine btn-pulse" id="heroWaitlistCta" data-i18n="joinWaitlist">Join Waitlist</a>
+            <a href="#marketplace" class="btn btn-secondary" data-i18n="viewDemo">View Demo</a>
+        </div>
+        <div class="hero-stats parallax-layer" data-speed="0.01">
+            <div class="hero-stat">
+                <div class="hero-stat-value"><span class="accent">MVP</span></div>
+                <div class="hero-stat-label" data-i18n="demoStatus">Demo Live</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value"><span class="accent">Curated</span></div>
+                <div class="hero-stat-label" data-i18n="operatorReview">Operator Review</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value"><span class="accent">Fast</span></div>
+                <div class="hero-stat-label" data-i18n="reservationFlow">Reservations</div>
+            </div>
+        </div>
+    </div>
+</section>

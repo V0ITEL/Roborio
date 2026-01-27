@@ -1,0 +1,249 @@
+'use strict';
+
+const translations = {
+        en: {
+            // Navbar
+            earlyAccess: "EARLY ACCESS",
+            viewDocs: "VIEW DOCS",
+            connectWallet: "Connect Wallet",
+            // Wallet
+            selectWallet: "Select Wallet",
+            recommended: "Recommended",
+            walletNote: "By connecting, you agree to our Terms of Service",
+            connected: "Connected",
+            buyRoborio: "Buy $ROBORIO",
+            disconnect: "Disconnect",
+            buyRoborioTitle: "Buy $ROBORIO",
+            tokenNotLaunched: "Token Not Yet Launched",
+            tokenNotLaunchedDesc: "$ROBORIO token will be available for purchase soon. Join our waitlist to be notified when we launch!",
+            joinWaitlist: "Join Waitlist",
+            // Hero
+            heroTitle: "Robot-as-a-Service Marketplace on",
+            heroDesc: "Roborio is an MVP marketplace demo for robot rentals. Discover verified operators, explore live listings, and reserve a pilot in minutes - no long sales cycles.",
+            viewDemo:"View Demo",
+            demoStatus: "Demo Live",
+            operatorReview: "Operator Review",
+            reservationFlow: "Reservations",
+            // Partners
+            integratedWith: "Integrated With",
+            // Usecases
+            useCases: "USECASES",
+            useCasesTitle: "Robots for Every Industry",
+            useCasesDesc: "From last-mile delivery to industrial inspection, Roborio connects you with the right robot for any task. Pay only for what you use.",
+            lastMileDelivery: "Last-Mile Delivery",
+            lastMileDeliveryDesc: "Autonomous robots delivering packages, groceries, and food directly to customers. Pay per-km or per-delivery.",
+            commercialCleaning: "Commercial Cleaning",
+            commercialCleaningDesc: "Industrial floor scrubbers, vacuum robots, and sanitization units for malls, offices, and warehouses.",
+            securityPatrol: "Security Patrol",
+            securityPatrolDesc: "24/7 autonomous patrol robots with cameras, sensors, and real-time alerts. Perfect for large facilities.",
+            infrastructureInspection: "Infrastructure Inspection",
+            infrastructureInspectionDesc: "Drones and crawlers for inspecting pipelines, power lines, bridges, and buildings. Reduce risk, save costs.",
+            warehouseAutomation: "Warehouse Automation",
+            warehouseAutomationDesc: "Robotic arms and AGVs for picking, packing, and inventory management. Scale up or down instantly.",
+            agriculturalRobots: "Agricultural Robots",
+            agriculturalRobotsDesc: "Autonomous farming robots for planting, monitoring, and harvesting. Perfect for seasonal demands.",
+            healthcareAssistants: "Healthcare Assistants",
+            healthcareAssistantsDesc: "Medical delivery robots and patient assistance units for hospitals and care facilities.",
+            // Architecture Pillars
+            architecture: "ARCHITECTURE",
+            architectureTitle: "The Three Pillars",
+            architectureDesc: "Roborio connects robot operators with businesses needing automation. Our decentralized infrastructure ensures transparency, fair pricing, and instant settlement.",
+            layer1: "Layer 1",
+            layer2: "Layer 2",
+            layer3: "Layer 3",
+            pillar1Name: "Robots",
+            pillar2Name: "Pricing",
+            pillar3Name: "Platform",
+            pillar1Title: "Physical Robot Fleet",
+            pillar2Title: "Flexible Payment Models",
+            pillar3Title: "Decentralized Infrastructure",
+            deliveryRobots: "Delivery Robots",
+            deliveryRobotsDesc: "Autonomous last-mile delivery for packages and food",
+            cleaningRobots: "Cleaning Robots",
+            cleaningRobotsDesc: "Industrial scrubbers, vacuums, and sanitizers",
+            securityBots: "Security Bots",
+            securityBotsDesc: "Patrol units with cameras and sensors",
+            inspectionDrones: "Inspection Drones",
+            inspectionDronesDesc: "Aerial and ground inspection systems",
+            warehouseAGVs: "Warehouse AGVs",
+            warehouseAGVsDesc: "Automated guided vehicles for logistics",
+            perTask: "Per-Task",
+            perTaskDesc: "Pay only when a job is completed successfully",
+            perMinute: "Per-Minute",
+            perMinuteDesc: "Time-based billing for hourly rentals",
+            perKilometer: "Per-Kilometer",
+            perKilometerDesc: "Distance-based pricing for delivery robots",
+            subscription: "Subscription",
+            subscriptionDesc: "Monthly plans for regular usage",
+            enterprise: "Enterprise",
+            enterpriseDesc: "Custom pricing for large deployments",
+            restApiDesc: "Integrate robot rentals into your systems",
+            ratingSystem: "Rating System",
+            ratingSystemDesc: "Transparent reviews for operators and robots",
+            smartContracts: "Smart Contracts",
+            smartContractsDesc: "Automated escrow and payment settlement",
+            roborioTokenDesc: "20% discount, staking rewards, governance",
+            realTimeTracking: "Real-time Tracking",
+            realTimeTrackingDesc: "Live location and status updates",
+            // Marketplace Categories & Descriptions
+            marketplace: "MARKETPLACE",
+            marketplaceTitle: "Browse Available Robots",
+            comingSoon: "Coming Soon",
+            theRobotsMarketplace: "The Robots Marketplace",
+            marketplaceDesc: "Think Fiverr for robots. Operators list their robots, businesses reserve pilots fast. Pay in SOL or USDC.",
+            browseAll: "browse all →",
+            catDelivery: "Delivery",
+            catCleaning: "Cleaning",
+            catSecurity: "Security",
+            catInspection: "Inspection",
+            catWarehouse: "Warehouse",
+            catAgriculture: "Agriculture",
+            catHealthcare: "Healthcare",
+            catHospitality: "Hospitality",
+            speedBotDesc: "Fast autonomous delivery robot for last-mile logistics. Up to 20km/h with 50kg payload.",
+            cargoMateDesc: "Heavy-duty delivery robot for industrial packages. 200kg capacity, all-terrain.",
+            cleanMasterDesc: "Industrial floor cleaning robot with wet/dry modes. Perfect for warehouses and malls.",
+            saniBotDesc: "UV-C disinfection robot for hospitals and offices. Kills 99.9% of pathogens.",
+            guardBotDesc: "Autonomous security patrol with night vision, motion detection, and real-time alerts.",
+            watchDogDesc: "Quadruped security robot with AI threat detection. Patrols complex terrain.",
+            skyEyeDesc: "Aerial inspection drone with 4K camera, thermal imaging, and automated flight paths.",
+            pipeCrawlerDesc: "Pipeline inspection robot with 360° camera. Fits pipes from 6 to 48 inch diameter.",
+            pickerBotDesc: "Robotic arm for warehouse picking and packing. Integrates with WMS systems.",
+            palletMoverDesc: "Automated guided vehicle for pallet transport. 2-ton capacity, 24/7 operation.",
+            farmBotDesc: "Autonomous harvesting robot for fruits and vegetables. Gentle handling, high efficiency.",
+            cropScoutDesc: "Agricultural drone for crop monitoring, spraying, and health analysis.",
+            mediBotDesc: "Hospital delivery robot for medications, samples, and supplies. UV sanitization included.",
+            careBotDesc: "Patient assistance robot for mobility support, reminders, and emergency alerts.",
+            serveBotDesc: "Restaurant serving robot for food delivery to tables. Multi-tray capacity.",
+            // Tokenomics
+            tokenomics: "TOKENOMICS",
+            tokenomicsTitle: "$ROBORIO Token Distribution",
+            tokenomicsDesc: "Fair launch with transparent allocation. No presale, no VC dumps. Built for the community, powered by utility.",
+            marketplaceRewards: "Marketplace Rewards",
+            stakingGovernance: "Staking & Governance",
+            teamVesting: "Team (2yr vesting)",
+            liquidityPool: "Liquidity Pool",
+            marketingPartnerships: "Marketing & Partnerships",
+            treasuryReserve: "Treasury Reserve",
+            totalSupply: "TOTAL SUPPLY",
+            buyTax: "BUY TAX",
+            sellTax: "SELL TAX",
+            lpBurned: "LP BURNED",
+            contract: "CONTRACT",
+            // Roadmap
+            roadmap: "ROADMAP",
+            roadmapTitle: "Building the Future of Robot Rentals",
+            roadmapDesc: "From concept to global marketplace. Track our progress as we revolutionize how businesses access robotic automation.",
+            inProgress: "IN PROGRESS",
+            upcoming: "UPCOMING",
+            completed: "COMPLETED",
+            roadmap1Title: "Token Launch",
+            roadmap1Item1: "$ROBORIO token launch on Solana",
+            roadmap1Item2: "Community building & social presence",
+            roadmap1Item3: "Core team assembly",
+            roadmap1Item4: "Whitepaper v1 release",
+            roadmap2Title: "Platform Development",
+            roadmap2Item1: "Smart contract architecture",
+            roadmap2Item2: "Operator onboarding portal",
+            roadmap2Item3: "Robot API integration framework",
+            roadmap2Item4: "Staking mechanism launch",
+            roadmap3Title: "Beta Launch",
+            roadmap3Item1: "Private beta with select partners",
+            roadmap3Item2: "First robot operators onboarded",
+            roadmap3Item3: "Mobile app development",
+            roadmap3Item4: "Security audits & testing",
+            roadmap4Title: "Public Marketplace",
+            roadmap4Item1: "Public marketplace launch",
+            roadmap4Item2: "100+ robots listed",
+            roadmap4Item3: "Enterprise API access",
+            roadmap4Item4: "Cross-chain bridge (ETH, BSC)",
+            roadmap5Title: "Global Expansion",
+            roadmap5Item1: "Multi-region support (US, EU, Asia)",
+            roadmap5Item2: "DAO governance activation",
+            roadmap5Item3: "Insurance & SLA framework",
+            roadmap5Item4: "1000+ robots, $10M+ volume",
+            // FAQ
+            faq: "FAQ",
+            faqTitle: "Frequently Asked Questions",
+            faqDesc: "Everything you need to know about Roborio, robot rentals, and the $ROBORIO token.",
+            viewAllFaqs: "View all FAQs →",
+            faq1Q: "What is Roborio?",
+            faq1A: "Roborio is a decentralized marketplace built on Solana where businesses can rent robots on-demand. Think of it as \"Uber for robots\" — operators list their robots, businesses rent them for specific tasks, and payments are handled automatically via smart contracts.",
+            faq2Q: "How do payments work?",
+            faq2A: "For MVP pilots, payments are coordinated directly with verified operators after you reserve a slot. Escrow automation is planned for later phases as we expand the marketplace.",
+            faq3Q: "What types of robots are available?",
+            faq3A: "Our marketplace features delivery robots, cleaning bots, security patrol units, inspection drones, warehouse automation, agricultural robots, and healthcare assistants. New categories are added as operators join the platform.",
+            faq4Q: "How do I become a robot operator?",
+            faq4A: "Robot owners can list their units on Roborio, set their own pricing, and earn $ROBORIO for completed tasks. Our platform handles booking, payments, and dispute resolution. Staking $ROBORIO tokens gives operators priority listing.",
+            faq5Q: "What is $ROBORIO token used for?",
+            faq5A: "$ROBORIO will power discounts, staking, and governance once the token is live. The MVP demo focuses on marketplace flow and operator trust while token utilities roll out.",
+            faq6Q: "When will the marketplace launch?",
+            faq6A: "The MVP demo is live today, and we're onboarding pilot customers now. Join the waitlist to secure early access and priority reservations.",
+            faq7Q: "How does Roborio ensure quality?",
+            faq7A: "Every operator is vetted and each robot is reviewed before it appears in the demo. We also collect post-pilot feedback to keep only top-performing operators.",
+            faq8Q: "Is there an API for businesses?",
+            faq8A: "Yes, our REST API allows businesses to integrate robot rentals directly into their operations. Schedule recurring tasks, manage fleets, track robots in real-time, and automate payments — all programmatically.",
+            // Waitlist
+            waitlistBadge: "Early Access",
+            waitlistTitle: "Get",
+            waitlistAccess: "MVP Access",
+            waitlistDesc: "Reserve a pilot slot, receive a guide demo, and get priority onboarding as we scale the marketplace.",
+            waitlistPlaceholder: "Enter your email",
+            waitlistBtn: "Join Waitlist",
+            waitlistNote: "No spam. Unsubscribe anytime.",
+            waitlistSuccess: "✓ You're on the list! We'll notify you when we launch.",
+
+            // Cookie Banner
+            cookieText: "We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.",
+            cookieLearnMore: "Learn more",
+            cookieAccept: "Accept",
+            cookieDecline: "Decline",
+
+            // Jupiter Terminal
+            connectWalletFirst: "Connect Wallet First"
+        }
+       
+    };
+
+    let currentLang = 'en';
+
+export function getCurrentLang() {
+    return currentLang;
+}
+
+export function initLanguageToggle() {
+    const toggles = [document.getElementById('langToggle'), document.getElementById('langToggleMobile')];
+
+    // Check saved preference
+    const savedLang = localStorage.getItem('roborio-lang') || 'en';
+    currentLang = savedLang;
+    toggles.forEach(t => { if (t) t.textContent = savedLang.toUpperCase(); });
+    applyTranslations(savedLang);
+
+    toggles.forEach(toggle => {
+        if (!toggle) return;
+        toggle.addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'ru' : 'en';
+            toggles.forEach(t => { if (t) t.textContent = currentLang.toUpperCase(); });
+            localStorage.setItem('roborio-lang', currentLang);
+            applyTranslations(currentLang);
+        });
+    });
+}
+
+export function applyTranslations(lang) {
+    const t = translations[lang];
+    if (!t) return;
+
+    // Update elements with data-i18n attribute
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) {
+            if (el.tagName === 'INPUT') {
+                el.placeholder = t[key];
+            } else {
+                el.textContent = t[key];
+            }
+        }
+    });
+}

@@ -1,0 +1,23 @@
+# Roborio NPM Configuration
+
+# Save exact versions instead of using ^ or ~
+# This ensures consistent builds across different environments
+save-exact=true
+
+# Use package-lock for consistent installs
+package-lock=true
+
+# Engine strict - fail if Node version doesn't match package.json
+engine-strict=true
+
+# Audit level - fail on high/critical vulnerabilities in production deps
+audit-level=high
+
+# Fund messages - disable annoying funding messages
+fund=false
+
+# Progress - show progress during install
+progress=true
+
+# Loglevel - show warnings and errors
+loglevel=warn

@@ -1,0 +1,845 @@
+.marketplace {
+background: var(--bg-primary);
+}
+.marketplace-header {
+display: flex;
+justify-content: space-between;
+align-items: flex-end;
+margin-bottom: 48px;
+}
+.marketplace-badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+padding: 6px 12px;
+background: rgba(251, 191, 36, 0.1);
+border: 1px solid rgba(251, 191, 36, 0.2);
+border-radius: 50px;
+font-size: 10px;
+font-weight: 600;
+font-family: var(--font-mono);
+color: #fbbf24;
+text-transform: uppercase;
+letter-spacing: 0.1em;
+margin-bottom: 16px;
+}
+.marketplace-link {
+color: var(--accent);
+font-size: 13px;
+font-weight: 500;
+font-family: var(--font-mono);
+display: flex;
+align-items: center;
+gap: 6px;
+transition: opacity 0.2s;
+}
+@media (hover: hover) {
+.marketplace-link:hover {
+opacity: 0.7;
+}
+}
+.marketplace-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+gap: 16px;
+}
+.market-card {
+background: var(--bg-card);
+border: 1px solid var(--border-color);
+border-radius: 12px;
+overflow: hidden;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+position: relative;
+}
+.market-card::before {
+content: '';
+position: absolute;
+inset: -1px;
+background: linear-gradient(135deg, var(--accent), #3b82f6, #8b5cf6, var(--accent));
+border-radius: 13px;
+opacity: 0;
+z-index: -1;
+transition: opacity 0.3s ease;
+background-size: 300% 300%;
+animation: gradientShift 3s ease infinite paused;
+}
+@keyframes gradientShift {
+0%, 100% { background-position: 0% 50%; }
+50% { background-position: 100% 50%; }
+}
+@media (hover: hover) {
+.market-card:hover {
+border-color: transparent;
+transform: translateY(-8px) scale(1.02);
+box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 30px var(--accent-glow);
+}
+.market-card:hover::before {
+opacity: 1;
+animation-play-state: running;
+}
+.market-card:hover .market-card-image {
+transform: scale(1.15) rotate(2deg);
+}
+.market-card:hover .market-price {
+text-shadow: 0 0 15px var(--accent-glow);
+transform: scale(1.05);
+}
+.market-card:hover .market-category {
+color: var(--accent);
+}
+}
+.market-card-top {
+padding: 10px 14px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-bottom: 1px solid var(--border-color);
+}
+.market-category {
+font-size: 10px;
+font-weight: 600;
+font-family: var(--font-mono);
+color: var(--text-muted);
+text-transform: uppercase;
+letter-spacing: 0.05em;
+}
+.owner-actions {
+display: flex;
+gap: 6px;
+}
+.btn-owner {
+width: 28px;
+height: 28px;
+border-radius: 6px;
+border: 1px solid var(--border-color);
+background: var(--bg-card);
+color: var(--text-muted);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s ease;
+}
+.btn-owner:hover {
+border-color: var(--accent);
+color: var(--accent);
+background: rgba(16, 185, 129, 0.1);
+}
+.btn-delete:hover {
+border-color: #ef4444;
+color: #ef4444;
+background: rgba(239, 68, 68, 0.1);
+}
+.market-card-image {
+height: 100px;
+background: linear-gradient(135deg, #1e1b4b 0%, #0f0a1e 100%);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 40px;
+transition: transform 0.3s ease;
+user-select: none;
+-webkit-user-select: none;
+}
+.market-card-body {
+padding: 16px;
+}
+.market-card-title {
+font-size: 14px;
+font-weight: 600;
+margin-bottom: 6px;
+letter-spacing: -0.01em;
+}
+.market-card-desc {
+font-size: 12px;
+color: var(--text-secondary);
+line-height: 1.5;
+margin-bottom: 14px;
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
+}
+.market-card-footer {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding-top: 12px;
+border-top: 1px solid var(--border-color);
+}
+.market-price {
+font-size: 13px;
+font-weight: 600;
+font-family: var(--font-mono);
+color: var(--accent);
+transition: all 0.3s ease;;
+color: var(--accent);
+}
+.market-rating {
+display: flex;
+align-items: center;
+gap: 4px;
+font-size: 12px;
+color: var(--text-muted);
+}
+.market-rating .star {
+color: #f59e0b;
+}
+
+/* Marketplace Badge Live */
+.marketplace-badge--live {
+background: rgba(16, 185, 129, 0.1);
+border-color: rgba(16, 185, 129, 0.3);
+color: var(--accent);
+}
+.marketplace-badge--live::before {
+content: '';
+width: 6px;
+height: 6px;
+background: var(--accent);
+border-radius: 50%;
+animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+0%, 100% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* Marketplace Actions */
+.marketplace-actions {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.btn-add-robot {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 12px 20px;
+background: var(--accent);
+color: #000;
+border: none;
+border-radius: 8px;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s;
+}
+.btn-add-robot:hover {
+background: #0ea472;
+transform: translateY(-2px);
+}
+
+/* Marketplace Filters */
+.marketplace-filters {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-bottom: 32px;
+padding-bottom: 24px;
+border-bottom: 1px solid var(--border-color);
+}
+.filter-btn {
+padding: 8px 16px;
+background: transparent;
+border: 1px solid var(--border-color);
+border-radius: 50px;
+color: var(--text-muted);
+font-size: 13px;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.2s;
+}
+.filter-btn:hover {
+border-color: var(--accent);
+color: var(--text-primary);
+}
+.filter-btn.active {
+background: var(--accent);
+border-color: var(--accent);
+color: #000;
+}
+
+/* Rent Button on Card */
+.market-card-actions {
+padding: 12px;
+border-top: 1px solid var(--border-color);
+}
+.btn-rent {
+width: 100%;
+padding: 10px;
+background: transparent;
+border: 1px solid var(--accent);
+border-radius: 6px;
+color: var(--accent);
+font-size: 13px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s;
+}
+.btn-rent:hover {
+background: var(--accent);
+color: #000;
+}
+
+/* Marketplace Modal Styles (specific to marketplace modals) */
+.marketplace-modal {
+position: fixed;
+inset: 0;
+z-index: 10000;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 24px;
+opacity: 0;
+visibility: hidden;
+transition: all 0.3s ease;
+}
+.marketplace-modal.active {
+opacity: 1;
+visibility: visible;
+}
+.marketplace-modal .mp-modal-overlay {
+position: absolute;
+inset: 0;
+background: rgba(0, 0, 0, 0.8);
+backdrop-filter: blur(8px);
+}
+.marketplace-modal .mp-modal-content {
+position: relative;
+width: 100%;
+max-width: 500px;
+max-height: 90vh;
+overflow-y: auto;
+background: var(--bg-card);
+border: 1px solid var(--border-color);
+border-radius: 16px;
+padding: 32px;
+transform: translateY(20px);
+transition: transform 0.3s ease;
+}
+.marketplace-modal.active .mp-modal-content {
+transform: translateY(0);
+}
+.mp-modal-content--large {
+max-width: 640px;
+}
+.mp-modal-content--small {
+max-width: 400px;
+text-align: center;
+}
+.marketplace-modal .mp-modal-close {
+position: absolute;
+top: 16px;
+right: 16px;
+width: 32px;
+height: 32px;
+background: var(--bg-secondary);
+border: 1px solid var(--border-color);
+border-radius: 50%;
+color: var(--text-muted);
+font-size: 20px;
+line-height: 1;
+cursor: pointer;
+transition: all 0.2s;
+}
+.marketplace-modal .mp-modal-close:hover {
+background: var(--accent);
+border-color: var(--accent);
+color: #000;
+}
+.marketplace-modal .mp-modal-header {
+margin-bottom: 24px;
+}
+.marketplace-modal .mp-modal-title {
+font-size: 24px;
+font-weight: 700;
+margin-bottom: 8px;
+}
+.marketplace-modal .mp-modal-subtitle {
+color: var(--text-muted);
+font-size: 14px;
+}
+
+/* Form Styles */
+.robot-form {
+display: flex;
+flex-direction: column;
+gap: 24px;
+}
+.form-section {
+padding-bottom: 24px;
+border-bottom: 1px solid var(--border-color);
+}
+.form-section:last-of-type {
+border-bottom: none;
+padding-bottom: 0;
+}
+.form-section-title {
+font-size: 14px;
+font-weight: 600;
+color: var(--text-primary);
+margin-bottom: 16px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.form-optional {
+font-weight: 400;
+color: var(--text-muted);
+font-size: 12px;
+}
+.form-required {
+color: #ef4444;
+font-weight: 600;
+}
+.form-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 16px;
+}
+.form-grid--3 {
+grid-template-columns: repeat(3, 1fr);
+}
+.form-group {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+.form-label {
+font-size: 13px;
+font-weight: 500;
+color: var(--text-secondary);
+}
+.form-input, .form-select, .form-textarea {
+width: 100%;
+padding: 12px 16px;
+background: var(--bg-secondary);
+border: 1px solid var(--border-color);
+border-radius: 8px;
+color: var(--text-primary);
+font-size: 14px;
+font-family: inherit;
+transition: all 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+outline: none;
+border-color: var(--accent);
+box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+.form-input::placeholder, .form-textarea::placeholder {
+color: var(--text-muted);
+}
+.form-select {
+cursor: pointer;
+appearance: none;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+background-repeat: no-repeat;
+background-position: right 12px center;
+}
+.form-textarea {
+resize: vertical;
+min-height: 80px;
+}
+
+/* Upload */
+.form-upload {
+position: relative;
+}
+.upload-placeholder {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 8px;
+padding: 32px;
+background: var(--bg-secondary);
+border: 2px dashed var(--border-color);
+border-radius: 12px;
+color: var(--text-muted);
+font-size: 14px;
+cursor: pointer;
+transition: all 0.2s;
+}
+.upload-placeholder:hover {
+border-color: var(--accent);
+color: var(--accent);
+}
+.upload-hint {
+font-size: 12px;
+opacity: 0.7;
+}
+.upload-preview {
+position: relative;
+width: 100%;
+aspect-ratio: 16/9;
+border-radius: 12px;
+overflow: hidden;
+}
+.upload-preview img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.upload-remove {
+position: absolute;
+top: 8px;
+right: 8px;
+width: 28px;
+height: 28px;
+background: rgba(0, 0, 0, 0.7);
+border: none;
+border-radius: 50%;
+color: #fff;
+font-size: 18px;
+cursor: pointer;
+}
+
+/* Form Actions */
+.form-actions {
+display: flex;
+gap: 12px;
+justify-content: flex-end;
+margin-top: 8px;
+}
+.btn-primary, .btn-secondary {
+padding: 12px 24px;
+border-radius: 8px;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+}
+.btn-primary {
+background: var(--accent);
+border: none;
+color: #000;
+}
+.btn-primary:hover {
+background: #0ea472;
+}
+.btn-secondary {
+background: transparent;
+border: 1px solid var(--border-color);
+color: var(--text-primary);
+}
+.btn-secondary:hover {
+border-color: var(--text-muted);
+}
+.btn-danger {
+background: #ef4444;
+color: white;
+border: none;
+}
+.btn-danger:hover {
+background: #dc2626;
+}
+.modal-actions {
+display: flex;
+gap: 12px;
+margin-top: 20px;
+}
+.modal-actions button {
+flex: 1;
+}
+.btn-full {
+width: 100%;
+}
+.btn-loading {
+display: flex;
+}
+.spinner {
+animation: spin 1s linear infinite;
+}
+@keyframes spin {
+from { transform: rotate(0deg); }
+to { transform: rotate(360deg); }
+}
+
+/* Rent Modal */
+.rent-details {
+display: flex;
+flex-direction: column;
+gap: 20px;
+}
+.rent-robot-info {
+display: flex;
+gap: 16px;
+padding: 16px;
+background: var(--bg-secondary);
+border-radius: 12px;
+}
+.rent-robot-image {
+width: 80px;
+height: 80px;
+background: var(--bg-primary);
+border-radius: 8px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 32px;
+flex-shrink: 0;
+}
+.rent-robot-meta {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+.rent-category {
+display: inline-block;
+padding: 4px 10px;
+background: rgba(16, 185, 129, 0.1);
+border-radius: 50px;
+font-size: 11px;
+font-weight: 600;
+color: var(--accent);
+text-transform: uppercase;
+width: fit-content;
+}
+.rent-description {
+font-size: 13px;
+color: var(--text-muted);
+line-height: 1.5;
+}
+.rent-pricing {
+padding: 16px;
+background: var(--bg-secondary);
+border-radius: 12px;
+}
+.rent-price-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 8px 0;
+font-size: 14px;
+color: var(--text-secondary);
+}
+.rent-price-row--total {
+border-top: 1px solid var(--border-color);
+margin-top: 8px;
+padding-top: 16px;
+}
+.rent-price, .rent-total {
+font-weight: 600;
+color: var(--accent);
+font-family: var(--font-mono);
+}
+.rent-total {
+font-size: 18px;
+}
+.rent-payment {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.payment-options {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+}
+.payment-option {
+cursor: pointer;
+}
+.payment-option input {
+display: none;
+}
+.payment-option-content {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+padding: 16px;
+background: var(--bg-secondary);
+border: 2px solid var(--border-color);
+border-radius: 12px;
+transition: all 0.2s;
+}
+.payment-option input:checked + .payment-option-content {
+border-color: var(--accent);
+background: rgba(16, 185, 129, 0.1);
+}
+.payment-icon {
+font-size: 20px;
+font-weight: 700;
+}
+.payment-name {
+font-size: 14px;
+font-weight: 600;
+}
+.rent-escrow-info {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 12px 16px;
+background: rgba(59, 130, 246, 0.1);
+border: 1px solid rgba(59, 130, 246, 0.2);
+border-radius: 8px;
+font-size: 12px;
+color: #60a5fa;
+}
+
+/* Success Modal */
+.success-icon, .error-icon {
+margin-bottom: 24px;
+}
+.success-icon svg, .error-icon svg {
+animation: scaleIn 0.5s ease;
+}
+@keyframes scaleIn {
+from { transform: scale(0); opacity: 0; }
+to { transform: scale(1); opacity: 1; }
+}
+.operator-contact {
+margin: 24px 0;
+padding: 20px;
+background: var(--bg-secondary);
+border-radius: 12px;
+text-align: left;
+}
+.operator-contact h4 {
+font-size: 14px;
+font-weight: 600;
+margin-bottom: 16px;
+color: var(--text-primary);
+}
+.contact-info {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.contact-row {
+display: flex;
+justify-content: space-between;
+font-size: 14px;
+}
+.contact-label {
+color: var(--text-muted);
+}
+.contact-value {
+color: var(--text-primary);
+font-weight: 500;
+}
+.contact-main {
+font-size: 18px;
+color: var(--accent);
+word-break: break-all;
+padding: 12px 16px;
+background: rgba(16, 185, 129, 0.1);
+border-radius: 8px;
+border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.contact-note {
+margin-top: 16px;
+padding-top: 16px;
+border-top: 1px solid var(--border-color);
+font-size: 12px;
+color: var(--text-muted);
+}
+
+/* Wallet Modal */
+.wallet-options {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.wallet-option {
+display: flex;
+align-items: center;
+gap: 16px;
+width: 100%;
+padding: 16px 20px;
+background: var(--bg-secondary);
+border: 1px solid var(--border-color);
+border-radius: 12px;
+color: var(--text-primary);
+font-size: 16px;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.2s;
+}
+.wallet-option:hover {
+border-color: var(--accent);
+background: rgba(16, 185, 129, 0.05);
+}
+.wallet-icon {
+width: 32px;
+height: 32px;
+}
+
+/* Marketplace Empty State */
+.marketplace-empty {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 80px 24px;
+text-align: center;
+}
+.marketplace-empty.hidden {
+display: none;
+}
+.empty-icon {
+font-size: 64px;
+margin-bottom: 24px;
+opacity: 0.5;
+}
+.empty-title {
+font-size: 24px;
+font-weight: 600;
+margin-bottom: 12px;
+color: var(--text-primary);
+}
+.empty-desc {
+font-size: 14px;
+color: var(--text-muted);
+margin-bottom: 24px;
+max-width: 300px;
+}
+
+/* Responsive for forms */
+@media (max-width: 640px) {
+.form-grid, .form-grid--3 {
+grid-template-columns: 1fr;
+}
+.payment-options {
+grid-template-columns: 1fr;
+}
+.form-actions {
+flex-direction: column;
+}
+.btn-primary, .btn-secondary {
+width: 100%;
+}
+.marketplace-header {
+flex-direction: column;
+align-items: flex-start;
+gap: 16px;
+}
+.marketplace-filters {
+overflow-x: auto;
+flex-wrap: nowrap;
+padding-bottom: 12px;
+-webkit-overflow-scrolling: touch;
+}
+.filter-btn {
+flex-shrink: 0;
+}
+}
+
+@media (max-width: 768px) {
+  .marketplace-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .market-card {
+    margin-bottom: 16px;
+  }
+}
