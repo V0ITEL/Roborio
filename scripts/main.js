@@ -13,17 +13,15 @@ import { log } from './utils/logger.js';
 // ============ Global Error Handlers ============
 // Catch unhandled promise rejections
 window.addEventListener('unhandledrejection', (e) => {
-    console.error('[Unhandled Rejection]', e.reason);
-    const message = e.reason?.message || 'Unexpected error occurred';
-    notify.error(message);
-    // Prevent default browser error logging
+    log.error('[Unhandled Rejection]', e.reason);
+    notify.error('Something went wrong. Please try again.');
     e.preventDefault();
 });
 
 // Catch uncaught errors
 window.addEventListener('error', (e) => {
-    console.error('[Uncaught Error]', e.error || e.message);
-    notify.error('Unexpected error occurred');
+    log.error('[Uncaught Error]', e.error || e.message);
+    notify.error('Something went wrong. Please try again.');
 });
 
 // Network status handlers

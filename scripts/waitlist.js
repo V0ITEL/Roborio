@@ -71,14 +71,13 @@ export function initWaitlist() {
             } catch (error) {
                 log.error('[Waitlist]', 'API error:', error);
 
-                let errorMessage = error.message || 'Failed to join waitlist. Please try again.';
-
-                
-                if (errorMessage.includes('already registered') || errorMessage.includes('Email already')) {
-                    errorMessage = 'This email is already on the waitlist!';
+                // Check for specific error cases, otherwise show generic message
+                const errMsg = error.message || '';
+                if (errMsg.includes('already registered') || errMsg.includes('Email already')) {
+                    notify.error('This email is already on the waitlist!');
+                } else {
+                    notify.error('Failed to join waitlist. Please try again.');
                 }
-
-                notify.error(errorMessage);
             }
         }, { loadingText: 'Sending...' });
     });

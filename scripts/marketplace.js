@@ -257,7 +257,7 @@
                 updateEmptyState();
             } catch (err) {
                 log.error('[Marketplace]', 'Error loading robots:', err);
-                notify.error(err.message || 'Failed to load robots');
+                notify.error('Failed to load robots. Please refresh the page.');
             }
         }
 
@@ -577,7 +577,7 @@
                             notify.success('Robot updated successfully');
                             robotToEdit = null;
                         } else {
-                            notify.error(result.error || 'Failed to update robot');
+                            notify.error('Failed to update robot. Please try again.');
                         }
 
                     } else {
@@ -905,7 +905,7 @@
                         notify.success('Robot deleted successfully');
                         robotToDelete = null;
                     } else {
-                        notify.error('Failed to delete robot: ' + result.error);
+                        notify.error('Failed to delete robot. Please try again.');
                     }
                 }, { loadingText: 'Deleting...' });
             });
