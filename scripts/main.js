@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer'
 window.Buffer = Buffer
 
-import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'https://unpkg.com/web-vitals@3/dist/web-vitals.js?module';
+import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'web-vitals';
 import { initWaitlist } from './waitlist.js';
 import { initLanguageToggle } from './i18n.js';
 import { initWallet } from './wallet.js';
@@ -243,7 +243,7 @@ async function loadExternalScripts() {
         'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js',
         'https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js',
         'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js'
+
         
     ];
 

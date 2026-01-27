@@ -11,9 +11,11 @@
     "deploy": "vite build && vercel --prod"
   },
   "dependencies": {
+    "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.39.0",
     "buffer": "^6.0.3",
-    "process": "^0.11.10"
+    "process": "^0.11.10",
+    "web-vitals": "^5.1.0"
   },
   "devDependencies": {
     "vercel": "^50.4.10",

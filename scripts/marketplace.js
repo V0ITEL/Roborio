@@ -6,6 +6,7 @@
         import { normalizeRobot } from './models/robot.js';
         import { safeSelect, safeInsert, safeUpdate, safeDelete, safeUpload, safeStorageDelete } from './utils/safeSupabase.js';
         import { log } from './utils/logger.js';
+        import * as solanaWeb3 from '@solana/web3.js';
 
         /** @type {Map<string, import('./models/robot.js').Robot>} */
         const robotsMap = new Map();
