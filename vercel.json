@@ -35,11 +35,8 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains; preload"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://terminal.jup.ag; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.solana.com https://api.mainnet-beta.solana.com https://terminal.jup.ag; frame-src 'self' https://terminal.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
         }
+        
       ]
     },
     {
