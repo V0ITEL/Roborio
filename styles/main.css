@@ -1032,7 +1032,7 @@ pointer-events: none;
 @media (hover: hover) {
 .usecase-card:hover {
 border-color: var(--accent);
-transform: translateY(-8px) scale(1.02);
+transform: translateY(-8px);
 box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 0 0 40px var(--accent-glow);
 z-index: 10;
 }
@@ -1046,6 +1046,7 @@ filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.6));
 }
 .usecase-image {
 height: 180px;
+aspect-ratio: 16 / 9;
 background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
 position: relative;
 display: flex;

@@ -82,7 +82,7 @@ transform: scale(1.15) rotate(2deg);
 }
 .market-card:hover .market-price {
 text-shadow: 0 0 15px var(--accent-glow);
-transform: scale(1.05);
+color: var(--accent);
 }
 .market-card:hover .market-category {
 color: var(--accent);
@@ -132,6 +132,7 @@ background: rgba(239, 68, 68, 0.1);
 }
 .market-card-image {
 height: 100px;
+aspect-ratio: 16 / 9;
 background: linear-gradient(135deg, #1e1b4b 0%, #0f0a1e 100%);
 display: flex;
 align-items: center;
@@ -140,6 +141,12 @@ font-size: 40px;
 transition: transform 0.3s ease;
 user-select: none;
 -webkit-user-select: none;
+overflow: hidden;
+}
+.market-card-image img {
+width: 100%;
+height: 100%;
+object-fit: cover;
 }
 .market-card-body {
 padding: 16px;
@@ -576,6 +583,7 @@ border-radius: 12px;
 .rent-robot-image {
 width: 80px;
 height: 80px;
+aspect-ratio: 1;
 background: var(--bg-primary);
 border-radius: 8px;
 display: flex;
@@ -583,6 +591,12 @@ align-items: center;
 justify-content: center;
 font-size: 32px;
 flex-shrink: 0;
+overflow: hidden;
+}
+.rent-robot-image img {
+width: 100%;
+height: 100%;
+object-fit: cover;
 }
 .rent-robot-meta {
 display: flex;
