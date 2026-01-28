@@ -19,9 +19,15 @@
         let loadError = false;
 
         // Initialize Supabase client
-        function initSupabase() {
+        async function initSupabase() {
             if (window.supabase && SUPABASE_URL !== 'https://your-project.supabase.co') {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                const { error } = await supabase.auth.signInAnonymously();
+                if (error) throw error;
+            }
+                
                 log.info('[Marketplace]', 'Supabase initialized');
                 return true;
             }
@@ -400,6 +406,11 @@
                     imageUrl = urlData.publicUrl;
                 }
 
+                        const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError || !user) {
+                        notify.error('Auth session missing. Please refresh and try again.');
+                return;
+                }
                 // Insert robot into DB
                 try {
                     const data = await safeInsert(
@@ -417,7 +428,8 @@
                                 payload: robotData.payload || null,
                                 battery: robotData.battery || null,
                                 location: robotData.location || null,
-                                contact: robotData.contact || null
+                                contact: robotData.contact || null,
+                                user_id: user.id,
                             }])
                             .select()
                             .single(),
@@ -1377,7 +1389,7 @@
         }
 
         // Initialize Marketplace
-        export function initMarketplace() {
+        export async function initMarketplace() {
             // Get DOM elements now that page is loaded
             addRobotBtn = document.getElementById('addRobotBtn');
             addRobotEmptyBtn = document.getElementById('addRobotEmptyBtn');
@@ -1394,7 +1406,7 @@
             robotErrorModal = document.getElementById('robotErrorModal');
 
             // Initialize Supabase
-            initSupabase();
+            await initSupabase();
 
             // Load robots from DB (async, will call refreshOwnershipUI when done)
             loadRobotsFromDB().then(() => {
