@@ -47,8 +47,189 @@ let walletState = {
     connected: false,
     publicKey: null,
     balance: 0,
-    provider: null
+    provider: null,
+    jwt: null // JWT token for authenticated requests
 };
+
+// LocalStorage keys for JWT persistence
+const LS_JWT_KEY = 'wallet_jwt';
+const LS_WALLET_KEY = 'wallet_authed_wallet';
+const LS_EXPIRES_KEY = 'wallet_jwt_expires_at';
+const LS_PREFERRED_WALLET_KEY = 'wallet_preferred_wallet';
+
+// Supabase Edge Function URL for wallet auth
+const WALLET_AUTH_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1/wallet-auth';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+/**
+ * Save JWT to localStorage and memory
+ */
+function saveJWT(token, wallet, expiresIn) {
+    const expiresAt = Date.now() + (expiresIn * 1000);
+
+    // Save to memory
+    walletState.jwt = token;
+
+    // Save to localStorage
+    localStorage.setItem(LS_JWT_KEY, token);
+    localStorage.setItem(LS_WALLET_KEY, wallet);
+    localStorage.setItem(LS_EXPIRES_KEY, expiresAt.toString());
+
+    log.debug('[Wallet]', 'JWT stored, expires at:', new Date(expiresAt).toISOString());
+    log.debug('[Wallet]', 'JWT prefix:', token.substring(0, 20) + '...');
+}
+
+/**
+ * Clear JWT from localStorage and memory
+ */
+function clearJWT() {
+    walletState.jwt = null;
+    localStorage.removeItem(LS_JWT_KEY);
+    localStorage.removeItem(LS_WALLET_KEY);
+    localStorage.removeItem(LS_EXPIRES_KEY);
+    log.debug('[Wallet]', 'JWT cleared');
+}
+
+/**
+ * Load JWT from localStorage if valid
+ */
+function loadJWT() {
+    const token = localStorage.getItem(LS_JWT_KEY);
+    const expiresAt = parseInt(localStorage.getItem(LS_EXPIRES_KEY) || '0', 10);
+
+    if (token && expiresAt > Date.now()) {
+        walletState.jwt = token;
+        log.debug('[Wallet]', 'JWT loaded from storage, valid until:', new Date(expiresAt).toISOString());
+        return token;
+    }
+
+    // Token expired or missing - clear it
+    if (token) {
+        log.debug('[Wallet]', 'JWT expired, clearing');
+        clearJWT();
+    }
+    return null;
+}
+
+/**
+ * Sign message with wallet and get JWT token
+ * @param {Object} provider - Wallet provider (Phantom, Solflare, etc.)
+ * @param {string} publicKey - Wallet public key
+ * @returns {Promise<string|null>} JWT token or null on failure
+ */
+async function authenticateWallet(provider, publicKey) {
+    try {
+        // Generate nonce for replay protection
+        const nonce = crypto.randomUUID();
+        const timestamp = Date.now();
+        const message = `Sign in to Roborio\n\nNonce: ${nonce}\nTimestamp: ${timestamp}`;
+
+        // Request signature from wallet
+        const encodedMessage = new TextEncoder().encode(message);
+        const signedMessage = await provider.signMessage(encodedMessage, 'utf8');
+
+        // Convert signature to base64
+        const signature = btoa(String.fromCharCode(...signedMessage.signature));
+
+        // Send to edge function for verification
+        const response = await fetch(WALLET_AUTH_URL, {
+            method: 'POST',
+            headers: {
+             'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+            body: JSON.stringify({
+                wallet: publicKey,
+                signature: signature,
+                message: message,
+                nonce: nonce
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            log.error('[Wallet]', 'Auth failed:', error);
+            return null;
+        }
+
+        const { token, wallet, expiresIn } = await response.json();
+
+        // Save JWT to localStorage and memory
+        saveJWT(token, wallet, expiresIn);
+
+        log.info('[Wallet]', 'Authenticated successfully');
+        log.debug('[Wallet]', 'JWT stored?', !!localStorage.getItem(LS_JWT_KEY));
+
+        return token;
+    } catch (error) {
+        log.error('[Wallet]', 'Authentication error:', error);
+        return null;
+    }
+}
+
+/**
+ * Get current JWT token for authenticated requests
+ * Checks memory first, then localStorage (with expiry check)
+ * @returns {string|null}
+ */
+export function getWalletJWT() {
+    // Check memory first
+    if (walletState.jwt) {
+        return walletState.jwt;
+    }
+
+    // Try to load from localStorage
+    return loadJWT();
+}
+
+const WALLET_PROVIDER_GETTERS = {
+    phantom: () => {
+        const provider = window.phantom?.solana;
+        return provider?.isPhantom ? provider : null;
+    },
+    solflare: () => {
+        const provider = window.solflare;
+        return provider?.isSolflare ? provider : null;
+    },
+    backpack: () => {
+        const provider = window.backpack;
+        return provider || null;
+    }
+};
+
+export function getWalletProvider(preferredWallet) {
+    const orderedWallets = ['phantom', 'solflare', 'backpack'];
+
+    if (preferredWallet && WALLET_PROVIDER_GETTERS[preferredWallet]) {
+        const preferredProvider = WALLET_PROVIDER_GETTERS[preferredWallet]();
+        if (preferredProvider) {
+            return { wallet: preferredWallet, provider: preferredProvider };
+        }
+    }
+
+    for (const wallet of orderedWallets) {
+        const provider = WALLET_PROVIDER_GETTERS[wallet]();
+        if (provider) {
+            return { wallet, provider };
+        }
+    }
+
+    return { wallet: null, provider: null };
+}
+
+function setPreferredWallet(wallet) {
+    if (wallet) {
+        localStorage.setItem(LS_PREFERRED_WALLET_KEY, wallet);
+        return;
+    }
+
+    localStorage.removeItem(LS_PREFERRED_WALLET_KEY);
+}
+
+function getPreferredWallet() {
+    return localStorage.getItem(LS_PREFERRED_WALLET_KEY);
+}
 
 export function initWallet() {
     const connectBtn = document.getElementById('connectWallet');
@@ -94,6 +275,13 @@ export function initWallet() {
         const isActive = walletDropdown?.classList.contains('active');
 
         if (isActive) {
+            const triggerBtn = (connectBtnMobile?.offsetParent ? connectBtnMobile : connectBtn) || connectBtnMobile || connectBtn;
+            if (walletDropdown?.contains(document.activeElement)) {
+                triggerBtn?.focus?.();
+                if (walletDropdown?.contains(document.activeElement)) {
+                    document.body.focus?.();
+                }
+            }
             walletDropdown?.classList.remove('active');
             overlay?.classList.remove('active');
             walletDropdown?.setAttribute('aria-hidden', 'true');
@@ -109,6 +297,13 @@ export function initWallet() {
     // Close wallet dropdown
     function closeWalletDropdown() {
         const overlay = document.getElementById('walletDropdownOverlay');
+        const triggerBtn = (connectBtnMobile?.offsetParent ? connectBtnMobile : connectBtn) || connectBtnMobile || connectBtn;
+        if (walletDropdown?.contains(document.activeElement)) {
+            triggerBtn?.focus?.();
+            if (walletDropdown?.contains(document.activeElement)) {
+                document.body.focus?.();
+            }
+        }
         walletDropdown?.classList.remove('active');
         overlay?.classList.remove('active');
         walletDropdown?.setAttribute('aria-hidden', 'true');
@@ -304,6 +499,14 @@ export function initWallet() {
             walletState.connected = true;
             walletState.provider = provider;
 
+            // Authenticate and get JWT
+            const jwt = await authenticateWallet(provider, walletState.publicKey);
+            if (jwt) {
+                walletState.jwt = jwt;
+            } else {
+                log.warn('[Wallet]', 'JWT auth failed, continuing without token');
+            }
+
             // Get balance
             try {
                 const connection = new (window.solanaWeb3?.Connection || class{})(
@@ -321,7 +524,7 @@ export function initWallet() {
             notify.success('Wallet connected');
 
             window.dispatchEvent(new CustomEvent('wallet-connected', {
-                detail: { publicKey: walletState.publicKey }
+                detail: { publicKey: walletState.publicKey, jwt: walletState.jwt }
             }));
 
             provider.on('disconnect', () => {
@@ -330,12 +533,15 @@ export function initWallet() {
             });
 
             // Listen for account change
-            provider.on('accountChanged', (publicKey) => {
+            provider.on('accountChanged', async (publicKey) => {
                 if (publicKey) {
                     walletState.publicKey = publicKey.toString();
+                    // Re-authenticate with new account
+                    const jwt = await authenticateWallet(provider, walletState.publicKey);
+                    walletState.jwt = jwt;
                     updateWalletUI();
                     window.dispatchEvent(new CustomEvent('wallet-connected', {
-                        detail: { publicKey: walletState.publicKey }
+                        detail: { publicKey: walletState.publicKey, jwt: walletState.jwt }
                     }));
                 } else {
                     disconnectWallet();
@@ -364,13 +570,18 @@ export function initWallet() {
             walletState.connected = true;
             walletState.provider = provider;
 
+            // Authenticate and get JWT
+            const jwt = await authenticateWallet(provider, walletState.publicKey);
+            if (jwt) {
+                walletState.jwt = jwt;
+            }
+
             closeWalletModal();
             updateWalletUI();
             notify.success('Wallet connected');
 
-            // Dispatch event for marketplace to refresh ownership UI
             window.dispatchEvent(new CustomEvent('wallet-connected', {
-                detail: { publicKey: walletState.publicKey }
+                detail: { publicKey: walletState.publicKey, jwt: walletState.jwt }
             }));
 
         } catch (error) {
@@ -394,13 +605,18 @@ export function initWallet() {
             walletState.connected = true;
             walletState.provider = provider;
 
+            // Authenticate and get JWT
+            const jwt = await authenticateWallet(provider, walletState.publicKey);
+            if (jwt) {
+                walletState.jwt = jwt;
+            }
+
             closeWalletModal();
             updateWalletUI();
             notify.success('Wallet connected');
 
-            // Dispatch event for marketplace to refresh ownership UI
             window.dispatchEvent(new CustomEvent('wallet-connected', {
-                detail: { publicKey: walletState.publicKey }
+                detail: { publicKey: walletState.publicKey, jwt: walletState.jwt }
             }));
 
         } catch (error) {
@@ -410,20 +626,28 @@ export function initWallet() {
     }
 
     // Disconnect wallet
-    function disconnectWallet() {
+    function disconnectWallet({ clearPreferred = false } = {}) {
         try {
             walletState.provider?.disconnect?.();
         } catch (e) {}
 
+        // Clear JWT from localStorage
+        clearJWT();
+         if (clearPreferred) {
+            setPreferredWallet(null);
+        }
+        
         walletState = {
             connected: false,
             publicKey: null,
             balance: 0,
-            provider: null
+            provider: null,
+            jwt: null
         };
 
         closeWalletDropdown();
         updateWalletUI();
+        window.dispatchEvent(new CustomEvent('wallet-disconnected'));
     }
 
     // Event listeners
@@ -435,6 +659,7 @@ export function initWallet() {
     walletOptions?.forEach(option => {
         option.addEventListener('click', async () => {
             const wallet = option.dataset.wallet;
+            setPreferredWallet(wallet);
 
             await withLoading(option, async () => {
                 switch (wallet) {
@@ -478,14 +703,17 @@ export function initWallet() {
     // Auto-connect if previously trusted (silent reconnect on page refresh)
     const autoConnectWallet = async () => {
         try {
-            const phantom = window.phantom?.solana;
-            if (!phantom?.isPhantom) return;
+            const preferredWallet = getPreferredWallet();
+            const { provider } = getWalletProvider(preferredWallet);
+            if (!provider?.connect) return;
 
             // Try silent connect - only works if user previously approved
-            const response = await phantom.connect({ onlyIfTrusted: true });
-            walletState.publicKey = response.publicKey.toString();
+            const response = await provider.connect({ onlyIfTrusted: true });
+            const publicKey = response?.publicKey || provider.publicKey;
+            if (!publicKey) return;
+            walletState.publicKey = publicKey.toString();
             walletState.connected = true;
-            walletState.provider = phantom;
+            walletState.provider = provider;
 
             // Get balance
             try {
@@ -493,7 +721,7 @@ export function initWallet() {
                     'https://api.mainnet-beta.solana.com',
                     'confirmed'
                 );
-                const balance = await connection.getBalance(response.publicKey);
+                const balance = await connection.getBalance(publicKey);
                 walletState.balance = balance / 1e9;
             } catch (e) {
                 walletState.balance = 0;
@@ -507,13 +735,13 @@ export function initWallet() {
             }));
 
             // Listen for disconnect
-            phantom.on('disconnect', () => {
+            provider.on?.('disconnect', () => {
                 disconnectWallet();
                 window.dispatchEvent(new CustomEvent('wallet-disconnected'));
             });
 
             // Listen for account change
-            phantom.on('accountChanged', (publicKey) => {
+            provider.on?.('accountChanged', (publicKey) => {
                 if (publicKey) {
                     walletState.publicKey = publicKey.toString();
                     updateWalletUI();

@@ -1,6 +1,6 @@
 'use strict';
 
-        import { getFullWalletAddress } from './wallet.js';
+        import { getFullWalletAddress, getWalletJWT } from './wallet.js';
         import notify from './ui/notify.js';
         import { withLoading } from './ui/withLoading.js';
         import { normalizeRobot } from './models/robot.js';
@@ -20,18 +20,23 @@
 
         // Initialize Supabase client
         async function initSupabase() {
-            if (window.supabase && SUPABASE_URL !== 'https://your-project.supabase.co') {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                const { error } = await supabase.auth.signInAnonymously();
-                if (error) throw error;
-            }
-                
-                log.info('[Marketplace]', 'Supabase initialized');
+   if (window.supabase && SUPABASE_URL !== 'https://your-project.supabase.co') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    global: {
+                        fetch: (url, options = {}) => {
+                            const jwt = getWalletJWT();
+                            const headers = new Headers(options.headers || {});
+                            if (jwt) headers.set('Authorization', `Bearer ${jwt}`);
+                            return fetch(url, { ...options, headers });
+                        }
+                    }
+                });
+
+             log.info('[Marketplace]', 'Supabase initialized (JWT via global.fetch)');
                 return true;
             }
-            log.warn('[Marketplace]', 'Supabase not configured. Running in demo mode.');
+
+             log.warn('[Marketplace]', 'Supabase not configured. Running in demo mode.');
             return false;
         }
 
@@ -137,27 +142,14 @@
         let filterBtns, walletModal, walletModalOverlay;
         let robotAddedModal, robotErrorModal;
 
-        // Get current wallet address
-        function getWalletAddress() {
-            const addrEl = document.getElementById('walletAddress');
-            if (addrEl && addrEl.textContent !== '...') {
-                return addrEl.textContent;
-            }
-            return null;
-        }
-
-        // Check if wallet connected via existing system
+        // Check if wallet connected
         function isWalletConnected() {
-            return window.walletConnected || getWalletAddress() !== null;
+            return !!getFullWalletAddress();
         }
 
-          // Get connected wallet address (full address for ownership checks)
+        // Get connected wallet address (full address for ownership/RLS)
         function getConnectedWallet() {
-            // Try to get full address from wallet.js first
-            const fullAddress = getFullWalletAddress();
-            if (fullAddress) return fullAddress;
-            // Fallback to DOM (shortened) - should not happen
-            return getWalletAddress();
+            return getFullWalletAddress() || null;
         }
 
         function openExistingWalletModal() {
@@ -183,6 +175,7 @@
         // Modal Functions for our new modals
         function openModal(modal) {
             if (!modal) return;
+            modal.__triggerEl = document.activeElement;
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
@@ -194,6 +187,12 @@
 
         function closeModal(modal) {
             if (!modal) return;
+            if (modal.contains(document.activeElement)) {
+                modal.__triggerEl?.focus?.();
+                if (modal.contains(document.activeElement)) {
+                    document.body.focus?.();
+                }
+            }
             modal.classList.remove('active');
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
@@ -383,11 +382,16 @@
                 return { success: true, data: robotData };
             }
 
+            const jwt = getWalletJWT();
+            if (!jwt) {
+                return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
+            }
+
             try {
                 let imageUrl = null;
                 let uploadedFileName = null;
 
-                // Upload image if provided (do this first, before DB insert)
+                // Upload image if provided
                 if (imageFile) {
                     const fileExt = imageFile.name.split('.').pop();
                     uploadedFileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -406,12 +410,7 @@
                     imageUrl = urlData.publicUrl;
                 }
 
-                        const { data: { user }, error: userError } = await supabase.auth.getUser();
-                if (userError || !user) {
-                        notify.error('Auth session missing. Please refresh and try again.');
-                return;
-                }
-                // Insert robot into DB
+                // Insert robot into DB with wallet header
                 try {
                     const data = await safeInsert(
                         supabase
@@ -429,7 +428,6 @@
                                 battery: robotData.battery || null,
                                 location: robotData.location || null,
                                 contact: robotData.contact || null,
-                                user_id: user.id,
                             }])
                             .select()
                             .single(),
@@ -723,8 +721,14 @@
                     const formData = new FormData(addRobotForm);
                     const imageFile = imageInput.files[0] || null;
 
+                    const walletAddress = getConnectedWallet();
+                    if (!walletAddress) {
+                        notify.error('Wallet disconnected. Please reconnect.');
+                        return;
+                    }
+
                     const rawData = {
-                        ownerWallet: getConnectedWallet() || 'demo-wallet',
+                        ownerWallet: walletAddress,
                         name: formData.get('name'),
                         category: formData.get('category'),
                         description: formData.get('description'),
@@ -1042,6 +1046,11 @@
                 return { success: true };
             }
 
+              const jwt = getWalletJWT();
+            if (!jwt) {
+                return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
+            }
+
             try {
                 // First, get the image URL to delete from storage
                 const robotData = await safeSelect(
@@ -1054,16 +1063,16 @@
 
                 const robot = robotData?.[0];
 
-                // Delete from database
+                // Delete from database with wallet header
                 await safeDelete(
-                    supabase
+                     supabase
                         .from('robots')
                         .delete()
                         .eq('id', robotId),
                     'Failed to delete robot'
                 );
 
-                // Delete image from storage if exists (non-critical, use safeStorageDelete)
+                // Delete image from storage if exists
                 if (robot?.image_url) {
                     const fileName = robot.image_url.split('/').pop();
                     await safeStorageDelete(
@@ -1226,6 +1235,12 @@
                 return { success: true, data: robotData };
             }
 
+            // Get client with JWT auth for RLS
+            const jwt = getWalletJWT();
+            if (!jwt) {
+                return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
+            }
+
             try {
                 let imageUrl = null;
                 let uploadedFileName = null;
@@ -1285,7 +1300,7 @@
                     updateData.image_url = imageUrl;
                 }
 
-                // Update DB
+                // Update DB with wallet header
                 try {
                     const data = await safeUpdate(
                         supabase
