@@ -90,7 +90,7 @@ export function initWaitlist() {
     }
 
     const hash = window.location.hash || '';
-    const statusMatch = hash.match(/waitlist\\?status=([^&]+)/);
+    const statusMatch = hash.match(/waitlist\?status=([^&]+)/);
     if (statusMatch && statusMatch[1]) {
         const status = decodeURIComponent(statusMatch[1]);
         if (status === 'confirmed') {
