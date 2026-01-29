@@ -158,20 +158,11 @@ function getBaseUrl(origin) {
 
 async function sendConfirmationEmail({ email, token, origin }) {
   if (!RESEND_API_KEY || !RESEND_FROM) {
-    console.warn('[Waitlist] Resend not configured', {
-      hasResendKey: !!RESEND_API_KEY,
-      resendFrom: RESEND_FROM || null
-    })
     return { sent: false, reason: 'missing_email_provider' }
   }
 
   const baseUrl = getBaseUrl(origin)
   const confirmUrl = `${baseUrl}/api/waitlist/confirm?token=${encodeURIComponent(token)}`
-  console.info('[Waitlist] Sending confirmation email', {
-    to: email,
-    from: RESEND_FROM,
-    baseUrl
-  })
   const subject = 'Confirm your Roborio waitlist signup'
   const text = `Confirm your email to join the Roborio waitlist:\n\n${confirmUrl}\n\nIf you did not request this, you can ignore this email.`
   const html = `
@@ -282,12 +273,6 @@ export default async function handler(req, res) {
 
   // Insert to database
   try {
-    console.info('[Waitlist] Email config', {
-      hasResendKey: !!RESEND_API_KEY,
-      resendFrom: RESEND_FROM || null,
-      baseUrl: WAITLIST_BASE_URL || null
-    })
-
     const now = new Date()
     const token = createConfirmToken()
     const tokenHash = hashToken(token)
