@@ -253,6 +253,10 @@ transform: translate(-50%, -50%) scale(0.8);
 .cursor.hidden {
 opacity: 0;
 }
+body.cursor-native .cursor,
+body.cursor-native .cursor-dot {
+opacity: 0;
+}
 .is-hidden {
 display: none !important;
 }

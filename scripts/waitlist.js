@@ -11,6 +11,22 @@ export function initWaitlist() {
 
     if (!form || !success) return;
 
+    const hash = window.location.hash || '';
+    const statusMatch = hash.match(/waitlist\\?status=([^&]+)/);
+    if (statusMatch && statusMatch[1]) {
+        const status = decodeURIComponent(statusMatch[1]);
+        if (status === 'confirmed') {
+            success.textContent = 'Email confirmed. You are on the list.';
+            form.style.display = 'none';
+            success.classList.add('show');
+        } else if (status === 'expired') {
+            notify.error('Confirmation link expired. Please sign up again.');
+        } else if (status === 'invalid') {
+            notify.error('Invalid confirmation link.');
+        } else if (status === 'error') {
+            notify.error('Could not confirm. Please try again later.');
+        }
+    }
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -66,7 +82,10 @@ export function initWaitlist() {
                 log.info('[Waitlist]', 'Signup successful:', sanitizedEmail);
                 form.style.display = 'none';
                 success.classList.add('show');
-                notify.success("You're on the list");
+                if (data?.message) {
+                    success.textContent = data.message;
+                }
+                notify.success("Check your email");
 
             } catch (error) {
                 log.error('[Waitlist]', 'API error:', error);

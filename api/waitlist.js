@@ -1,15 +1,22 @@
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
 // ============ Environment validation ============
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+const RESEND_FROM = process.env.RESEND_FROM
+const WAITLIST_BASE_URL = process.env.WAITLIST_BASE_URL || 'https://roborio.xyz'
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('[Waitlist] Missing SUPABASE_URL or SUPABASE_ANON_KEY')
 }
 
-const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const SUPABASE_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY
+
+const supabase = SUPABASE_URL && SUPABASE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
   : null
 
 // ============ CORS whitelist ============
@@ -109,6 +116,8 @@ const DISPOSABLE_DOMAINS = [
 ]
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const CONFIRM_TTL_MS = 24 * 60 * 60 * 1000
+const RESEND_COOLDOWN_MS = 60 * 1000
 
 /**
  * Normalize and validate email
@@ -132,6 +141,62 @@ function validateEmail(email) {
   }
 
   return { valid: true, normalized }
+}
+
+function createConfirmToken() {
+  return crypto.randomBytes(32).toString('base64url')
+}
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+function getBaseUrl(origin) {
+  if (origin && isOriginAllowed(origin)) return origin
+  return WAITLIST_BASE_URL
+}
+
+async function sendConfirmationEmail({ email, token, origin }) {
+  if (!RESEND_API_KEY || !RESEND_FROM) {
+    return { sent: false, reason: 'missing_email_provider' }
+  }
+
+  const baseUrl = getBaseUrl(origin)
+  const confirmUrl = `${baseUrl}/api/waitlist/confirm?token=${encodeURIComponent(token)}`
+  const subject = 'Confirm your Roborio waitlist signup'
+  const text = `Confirm your email to join the Roborio waitlist:\n\n${confirmUrl}\n\nIf you did not request this, you can ignore this email.`
+  const html = `
+    <div style="font-family:Arial, sans-serif; line-height:1.6;">
+      <h2>Confirm your Roborio waitlist signup</h2>
+      <p>Click the button below to confirm your email:</p>
+      <p><a href="${confirmUrl}" style="display:inline-block;padding:10px 16px;background:#10b981;color:#000;text-decoration:none;border-radius:8px;font-weight:600;">Confirm email</a></p>
+      <p>Or copy and paste this link:</p>
+      <p><a href="${confirmUrl}">${confirmUrl}</a></p>
+      <p>If you did not request this, you can ignore this email.</p>
+    </div>
+  `
+
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${RESEND_API_KEY}`
+    },
+    body: JSON.stringify({
+      from: RESEND_FROM,
+      to: [email],
+      subject,
+      text,
+      html
+    })
+  })
+
+  if (!resp.ok) {
+    const errorText = await resp.text().catch(() => '')
+    throw new Error(`Email send failed: ${resp.status} ${errorText}`)
+  }
+
+  return { sent: true }
 }
 
 // ============ Response helpers ============
@@ -208,31 +273,92 @@ export default async function handler(req, res) {
 
   // Insert to database
   try {
-    const { error } = await supabase
-      .from('waitlist')
-      .insert([{
-        email: validation.normalized,
-        created_at: new Date().toISOString(),
-        source: 'website'
-      }])
+    const now = new Date()
+    const token = createConfirmToken()
+    const tokenHash = hashToken(token)
+    const confirmExpiresAt = new Date(now.getTime() + CONFIRM_TTL_MS).toISOString()
 
-    if (error) {
-      // Duplicate email (unique constraint violation)
-      if (error.code === '23505') {
-        return res.status(409).json({
-          error: 'Email already registered',
-          message: 'This email is already on the waitlist'
+    const { data: existing, error: lookupError } = await supabase
+      .from('waitlist')
+      .select('id, status, last_sent_at')
+      .eq('email', validation.normalized)
+      .maybeSingle()
+
+    if (lookupError) {
+      console.error('[Waitlist] Lookup error:', lookupError.code)
+      throw lookupError
+    }
+
+    if (existing?.status === 'confirmed') {
+      return res.status(409).json({
+        error: 'Email already registered',
+        message: 'This email is already confirmed on the waitlist'
+      })
+    }
+
+    if (existing?.id) {
+      const lastSent = existing.last_sent_at ? new Date(existing.last_sent_at).getTime() : 0
+      if (lastSent && now.getTime() - lastSent < RESEND_COOLDOWN_MS) {
+        return res.status(429).json({
+          error: 'Too many requests',
+          message: 'Please wait a minute before requesting another confirmation email.'
         })
       }
 
-      console.error('[Waitlist] Database error:', error.code)
-      throw error
+      const { error: updateError } = await supabase
+        .from('waitlist')
+        .update({
+          confirm_token_hash: tokenHash,
+          confirm_expires_at: confirmExpiresAt,
+          last_sent_at: now.toISOString(),
+          status: 'pending',
+          source: 'website'
+        })
+        .eq('id', existing.id)
+
+      if (updateError) {
+        console.error('[Waitlist] Update error:', updateError.code)
+        throw updateError
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from('waitlist')
+        .insert([{
+          email: validation.normalized,
+          created_at: now.toISOString(),
+          source: 'website',
+          status: 'pending',
+          confirm_token_hash: tokenHash,
+          confirm_expires_at: confirmExpiresAt,
+          last_sent_at: now.toISOString()
+        }])
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          return res.status(409).json({
+            error: 'Email already registered',
+            message: 'This email is already on the waitlist'
+          })
+        }
+        console.error('[Waitlist] Database error:', insertError.code)
+        throw insertError
+      }
+    }
+
+    try {
+      await sendConfirmationEmail({ email: validation.normalized, token, origin })
+    } catch (emailError) {
+      console.error('[Waitlist] Email error:', emailError.message)
+      return res.status(202).json({
+        success: true,
+        message: 'We created your signup. Confirmation email could not be sent. Please try again later.'
+      })
     }
 
     // Success - don't return any data from DB
     return res.status(200).json({
       success: true,
-      message: 'Successfully joined the waitlist!'
+      message: 'Check your email to confirm your waitlist signup.'
     })
 
   } catch (error) {

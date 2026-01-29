@@ -352,7 +352,7 @@
         <section class="section marketplace" id="marketplace" aria-labelledby="marketplace-heading">
             <div class="section-container">
                 <div class="marketplace-header">
-                <div class="section-header section-header--tight">
+                    <div class="section-header section-header--tight">
                         <div class="marketplace-badge marketplace-badge--live">MVP Demo</div>
                         <h2 id="marketplace-heading" class="section-title" data-i18n="theRobotsMarketplace">The Robots Marketplace</h2>
                          <p class="section-desc" data-i18n="marketplaceDesc">Think Fiverr for robots. Operators list their robots, businesses reserve pilots fast. Pay in SOL or USDC.</p>
@@ -362,6 +362,29 @@
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                             Add Robot
                         </button>
+                    </div>
+                </div>
+
+                <div class="marketplace-toolbar">
+                    <div class="marketplace-search">
+                        <svg class="marketplace-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                        </svg>
+                        <input id="marketplaceSearch" type="search" placeholder="Search robots, tasks, locations" data-i18n="marketplaceSearchPlaceholder" aria-label="Search robots">
+                    </div>
+                    <div class="marketplace-sort">
+                        <label class="visually-hidden" for="marketplaceSort" data-i18n="marketplaceSortLabel">Sort robots</label>
+                        <select id="marketplaceSort">
+                            <option value="newest" data-i18n="marketplaceSortNewest">Newest</option>
+                            <option value="price-asc" data-i18n="marketplaceSortPriceAsc">Price: Low to High</option>
+                            <option value="price-desc" data-i18n="marketplaceSortPriceDesc">Price: High to Low</option>
+                            <option value="name-asc" data-i18n="marketplaceSortNameAsc">Name: A to Z</option>
+                        </select>
+                    </div>
+                    <div class="marketplace-view-toggle" role="group" aria-label="Marketplace view">
+                        <button class="marketplace-view-btn active" id="marketplaceViewAll" type="button" data-i18n="marketplaceViewAll">All Robots</button>
+                        <button class="marketplace-view-btn" id="marketplaceViewMine" type="button" data-i18n="marketplaceViewMine">My Robots</button>
                     </div>
                 </div>
 
@@ -381,7 +404,7 @@
                     <!-- Robots will be added dynamically -->
                 </div>
 
-                <!-- Empty State -->
+                                <!-- Empty State -->
                 <div class="marketplace-empty" id="marketplaceEmpty">
                     <div class="empty-icon">🤖</div>
                     <h3 class="empty-title">No robots listed yet</h3>
@@ -390,6 +413,11 @@
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         Add Robot
                     </button>
+                </div>
+                <div class="marketplace-empty marketplace-empty--filtered hidden" id="marketplaceNoResults">
+                    <div class="empty-icon">No results</div>
+                    <h3 class="empty-title" data-i18n="marketplaceNoResultsTitle">No matches found</h3>
+                    <p class="empty-desc" data-i18n="marketplaceNoResultsDesc">Try a different search or category.</p>
                 </div>
             </div>
         </section>

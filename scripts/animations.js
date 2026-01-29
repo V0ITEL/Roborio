@@ -145,15 +145,71 @@ export function initCustomCursor() {
 
     // Hover effect on interactive elements
     const hoverTargets = document.querySelectorAll('a, button, .btn, .faq-question, .market-card, .usecase-card, .pillar-card, .tokenomics-item, .roadmap-content');
+    const nativeCursorTargets = document.querySelectorAll('input, select, textarea, [contenteditable="true"]');
+
+    function enableNativeCursor() {
+        document.body.classList.add('cursor-native');
+        document.body.style.cursor = 'auto';
+    }
+
+    function disableNativeCursor() {
+        document.body.classList.remove('cursor-native');
+        document.body.style.cursor = 'none';
+    }
 
     hoverTargets.forEach(target => {
         target.addEventListener('mouseenter', () => cursor.classList.add('hover'));
         target.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
     });
 
+    nativeCursorTargets.forEach(target => {
+        target.addEventListener('mouseenter', enableNativeCursor);
+        target.addEventListener('mouseleave', disableNativeCursor);
+        target.addEventListener('focus', enableNativeCursor);
+        target.addEventListener('blur', disableNativeCursor);
+    });
+
+    let middleScrollMode = false;
+
     // Click effect
-    document.addEventListener('mousedown', () => cursor.classList.add('click'));
-    document.addEventListener('mouseup', () => cursor.classList.remove('click'));
+    document.addEventListener('mousedown', (e) => {
+        cursor.classList.add('click');
+        if (e.button === 1) {
+            enableNativeCursor();
+        }
+        if (e.button !== 1 && middleScrollMode) {
+            middleScrollMode = false;
+            disableNativeCursor();
+        }
+    });
+    document.addEventListener('mouseup', (e) => {
+        cursor.classList.remove('click');
+        if (e.button === 1) {
+            if (middleScrollMode) {
+                middleScrollMode = false;
+                disableNativeCursor();
+            } else {
+                middleScrollMode = true;
+                enableNativeCursor();
+            }
+            return;
+        }
+        if (!middleScrollMode) {
+            const target = e.target;
+            if (target && target.closest && target.closest('input, select, textarea, [contenteditable="true"]')) {
+                enableNativeCursor();
+            } else {
+                disableNativeCursor();
+            }
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && middleScrollMode) {
+            middleScrollMode = false;
+            disableNativeCursor();
+        }
+    });
 
     // Hide when leaving window
     document.addEventListener('mouseleave', () => {

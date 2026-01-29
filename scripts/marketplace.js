@@ -1,44 +1,23 @@
 'use strict';
 
-        import { getFullWalletAddress, getWalletJWT } from './wallet.js';
+        import { getFullWalletAddress } from './wallet.js';
         import notify from './ui/notify.js';
         import { withLoading } from './ui/withLoading.js';
         import { normalizeRobot } from './models/robot.js';
-        import { safeSelect, safeInsert, safeUpdate, safeDelete, safeUpload, safeStorageDelete } from './utils/safeSupabase.js';
+        import { safeSelect } from './utils/safeSupabase.js';
         import { log } from './utils/logger.js';
         import * as solanaWeb3 from '@solana/web3.js';
+        import { initSupabase, getSupabase, saveRobotToDB, updateRobotInDB, deleteRobotFromDB } from './marketplace/api/supabase.js';
+        import { validateRobotData } from './marketplace/utils/validation.js';
+        import { createCardRenderer } from './marketplace/ui/cards.js';
+        import { openModal, closeModal, closeAllModals } from './marketplace/ui/modals.js';
+        import { initRobotForm } from './marketplace/ui/forms.js';
 
         /** @type {Map<string, import('./models/robot.js').Robot>} */
         const robotsMap = new Map();
 
-        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-        const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-        let supabase = null;
         let isLoading = false;
         let loadError = false;
-
-        // Initialize Supabase client
-        async function initSupabase() {
-   if (window.supabase && SUPABASE_URL !== 'https://your-project.supabase.co') {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    global: {
-                        fetch: (url, options = {}) => {
-                            const jwt = getWalletJWT();
-                            const headers = new Headers(options.headers || {});
-                            if (jwt) headers.set('Authorization', `Bearer ${jwt}`);
-                            return fetch(url, { ...options, headers });
-                        }
-                    }
-                });
-
-             log.info('[Marketplace]', 'Supabase initialized (JWT via global.fetch)');
-                return true;
-            }
-
-             log.warn('[Marketplace]', 'Supabase not configured. Running in demo mode.');
-            return false;
-        }
 
         // ============ SOLANA ESCROW CONFIG ============
         // Program ID will be updated after deployment
@@ -138,9 +117,22 @@
         // Variables will be set in initMarketplace
         let currentRobot = null;
         let addRobotBtn, addRobotEmptyBtn, addRobotModal, addRobotForm;
-        let rentRobotModal, successModal, robotsGrid, marketplaceEmpty;
+        let rentRobotModal, successModal, robotsGrid, marketplaceEmpty, marketplaceNoResults, marketplaceSentinel;
         let filterBtns, walletModal, walletModalOverlay;
+        let searchInput, sortSelect;
+        let viewAllBtn, viewMineBtn;
         let robotAddedModal, robotErrorModal;
+        let cardRenderer = null;
+        let resetAddRobotForm = null;
+        let activeCategory = 'all';
+        let searchTerm = '';
+        let sortMode = 'newest';
+        let viewMode = 'all';
+        const PAGE_SIZE = 12;
+        let nextOffset = 0;
+        let hasMore = true;
+        let isLoadingMore = false;
+        let infiniteObserver = null;
 
         // Check if wallet connected
         function isWalletConnected() {
@@ -172,70 +164,7 @@
             return null;
         }
 
-        // Modal Functions for our new modals
-        function openModal(modal) {
-            if (!modal) return;
-            modal.__triggerEl = document.activeElement;
-            modal.classList.add('active');
-            modal.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
-
-            // Focus first focusable element
-            const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-            if (focusable) focusable.focus();
-        }
-
-        function closeModal(modal) {
-            if (!modal) return;
-            if (modal.contains(document.activeElement)) {
-                modal.__triggerEl?.focus?.();
-                if (modal.contains(document.activeElement)) {
-                    document.body.focus?.();
-                }
-            }
-            modal.classList.remove('active');
-            modal.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
-        }
-
-        function closeAllModals() {
-            document.querySelectorAll('.marketplace-modal.active').forEach(m => closeModal(m));
-        }
-
-                // Reset add robot form to default state
-        function resetAddRobotForm() {
-            const form = document.getElementById('addRobotForm');
-            if (form) form.reset();
-
-            const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-            const uploadPreview = document.getElementById('uploadPreview');
-            if (uploadPlaceholder) uploadPlaceholder.hidden = false;
-            if (uploadPreview) uploadPreview.hidden = true;
-
-            // Reset modal title and button text
-            const modalTitle = document.querySelector('#addRobotModal .mp-modal-title');
-            const btnText = document.querySelector('#addRobotModal .btn-primary .btn-text');
-            if (modalTitle) modalTitle.textContent = 'Add Your Robot';
-            if (btnText) btnText.textContent = 'List Robot';
-
-            robotToEdit = null;
-        }
-
-
-        // Show success modal for robot added
-        function showRobotAddedSuccess() {
-            closeModal(addRobotModal);
-            resetAddRobotForm();
-            openModal(robotAddedModal);
-        }
-
-        // Show error modal
-        function showRobotAddedError(message) {
-            const msgEl = document.getElementById('robotErrorMessage');
-            if (msgEl) msgEl.textContent = message || 'Something went wrong. Please try again.';
-            closeModal(addRobotModal);
-            openModal(robotErrorModal);
-        }
+        // Modal helpers are in ./marketplace/ui/modals.js
 
         // Update empty state visibility
         // Shows only when: supabase initialized (or demo mode), loading done, no error, robots empty
@@ -250,6 +179,12 @@
 
             const hasRobots = robotsGrid?.querySelectorAll('.market-card').length > 0;
             marketplaceEmpty.classList.toggle('hidden', hasRobots);
+        }
+
+        function updateFilteredState(totalCount, visibleCount) {
+            if (!marketplaceNoResults) return;
+            const show = totalCount > 0 && visibleCount === 0 && !isLoading && !loadError;
+            marketplaceNoResults.classList.toggle('hidden', !show);
         }
 
         // Set loading state on grid
@@ -284,7 +219,7 @@
                 loadingNotice = document.createElement('div');
                 loadingNotice.className = 'marketplace-notice hidden';
                 loadingNotice.id = 'marketplaceLoading';
-                loadingNotice.appendChild(createNoticeIcon('⏳'));
+                loadingNotice.appendChild(createNoticeIcon('...'));
                 const text = document.createElement('span');
                 text.className = 'notice-text';
                 text.textContent = 'Loading robots...';
@@ -306,7 +241,7 @@
                 errorNotice = document.createElement('div');
                 errorNotice.className = 'marketplace-notice marketplace-notice--error hidden';
                 errorNotice.id = 'marketplaceError';
-                errorNotice.appendChild(createNoticeIcon('⚠️'));
+                errorNotice.appendChild(createNoticeIcon('!'));
 
                 const text = document.createElement('span');
                 text.className = 'notice-text';
@@ -318,7 +253,7 @@
                 retryBtn.textContent = 'Retry';
                 retryBtn.addEventListener('click', () => {
                     hideErrorNotice();
-                    loadRobotsFromDB();
+                    loadRobotsFromDB({ reset: robotsMap.size === 0 });
                 });
                 errorNotice.appendChild(retryBtn);
                 robotsGrid.parentNode.insertBefore(errorNotice, robotsGrid);
@@ -337,7 +272,8 @@
         // ============ SUPABASE FUNCTIONS ============
 
         // Load robots from Supabase
-        async function loadRobotsFromDB() {
+        async function loadRobotsFromDB({ reset = false } = {}) {
+            const supabase = getSupabase();
             log.debug('[Marketplace]', 'loadRobotsFromDB called, supabase:', !!supabase);
 
             // Demo mode - no loading needed
@@ -346,438 +282,77 @@
                 loadError = false;
                 hideErrorNotice();
                 updateEmptyState();
+                applyFiltersAndSort();
                 return;
             }
 
+            if (isLoadingMore) return;
+            if (!hasMore && !reset) return;
+
             // Start loading, clear previous error
-            setGridLoading(true);
-            loadError = false;
-            hideErrorNotice();
+            if (reset) {
+                setGridLoading(true);
+                loadError = false;
+                hideErrorNotice();
+                robotsGrid.innerHTML = '';
+                robotsMap.clear();
+                nextOffset = 0;
+                hasMore = true;
+            }
+
+            isLoadingMore = true;
 
             try {
+                const from = nextOffset;
+                const to = nextOffset + PAGE_SIZE - 1;
+
                 const data = await safeSelect(
                     supabase
                         .from('robots')
                         .select('*')
                         .eq('is_available', true)
-                        .order('created_at', { ascending: false }),
+                        .order('created_at', { ascending: false })
+                        .range(from, to),
                     'Failed to load robots'
                 );
 
                 if (data && data.length > 0) {
                     log.info('[Marketplace]', 'Loaded', data.length, 'robots from database');
-                    // Clear existing cards and robotsMap
-                    robotsGrid.innerHTML = '';
-                    robotsMap.clear();
-
                     // Normalize and store robots
                     const robots = data.map(normalizeRobot);
                     robots.forEach(robot => {
+                        if (robotsMap.has(robot.id)) return;
                         robotsMap.set(robot.id, robot);
-                        addRobotCardFromRobot(robot);
+                        cardRenderer.addRobotCardFromRobot(robot);
                     });
                 } else {
-                    log.info('[Marketplace]', 'No robots found in database');
+                    if (reset) {
+                        log.info('[Marketplace]', 'No robots found in database');
+                    }
                 }
 
                 // Success - clear loading, show empty state if needed
-                setGridLoading(false);
+                nextOffset += (data?.length || 0);
+                if (!data || data.length < PAGE_SIZE) {
+                    hasMore = false;
+                }
+
+                if (reset) {
+                    setGridLoading(false);
+                }
                 updateEmptyState();
+                applyFiltersAndSort();
             } catch (err) {
                 log.error('[Marketplace]', 'Error loading robots:', err);
                 loadError = true;
-                setGridLoading(false);
+                if (reset) {
+                    setGridLoading(false);
+                }
                 // Show inline error with retry button
                 showErrorNotice('Failed to load robots');
+            } finally {
+                isLoadingMore = false;
             }
-        }
-
-        // Save robot to Supabase
-        async function saveRobotToDB(robotData, imageFile) {
-            if (!supabase) {
-                log.info('[Marketplace]', 'Demo mode: Robot not saved to DB');
-                return { success: true, data: robotData };
-            }
-
-            const jwt = getWalletJWT();
-            if (!jwt) {
-                return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
-            }
-
-            try {
-                let imageUrl = null;
-                let uploadedFileName = null;
-
-                // Upload image if provided
-                if (imageFile) {
-                    const fileExt = imageFile.name.split('.').pop();
-                    uploadedFileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-
-                    await safeUpload(
-                        supabase.storage
-                            .from('robot-images')
-                            .upload(uploadedFileName, imageFile),
-                        'Failed to upload image'
-                    );
-
-                    const { data: urlData } = supabase.storage
-                        .from('robot-images')
-                        .getPublicUrl(uploadedFileName);
-
-                    imageUrl = urlData.publicUrl;
-                }
-
-                // Insert robot into DB with wallet header
-                try {
-                    const data = await safeInsert(
-                        supabase
-                            .from('robots')
-                            .insert([{
-                                owner_wallet: robotData.ownerWallet,
-                                name: robotData.name,
-                                category: robotData.category,
-                                description: robotData.description,
-                                image_url: imageUrl,
-                                price: parseFloat(robotData.price),
-                                price_unit: robotData.priceUnit,
-                                speed: robotData.speed || null,
-                                payload: robotData.payload || null,
-                                battery: robotData.battery || null,
-                                location: robotData.location || null,
-                                contact: robotData.contact || null,
-                            }])
-                            .select()
-                            .single(),
-                        'Failed to save robot'
-                    );
-
-                    return { success: true, data: data };
-                } catch (dbError) {
-                    // DB insert failed - cleanup uploaded image
-                    if (uploadedFileName) {
-                        await safeStorageDelete(
-                            supabase.storage.from('robot-images').remove([uploadedFileName])
-                        );
-                    }
-                    throw dbError;
-                }
-            } catch (err) {
-                log.error('[Marketplace]', 'Error saving robot:', err);
-                return { success: false, error: err.message };
-            }
-        }
-
-        const CATEGORY_EMOJIS = {
-            delivery: '🚚',
-            cleaning: '🧹',
-            security: '🛡️',
-            inspection: '🔍',
-            warehouse: '🤖',
-            agriculture: '🌾',
-            healthcare: '🏥',
-            hospitality: '🍽️'
-        };
-
-        function getCategoryEmoji(category) {
-            return CATEGORY_EMOJIS[category] || '🤖';
-        }
-
-        function formatCategory(category) {
-            if (!category) return '';
-            return category.charAt(0).toUpperCase() + category.slice(1);
-        }
-
-        function getSafeImageUrl(url) {
-            if (!url || typeof url !== 'string') return null;
-            try {
-                const parsed = new URL(url, window.location.origin);
-                const protocol = parsed.protocol.toLowerCase();
-                if (protocol === 'http:' || protocol === 'https:' || protocol === 'blob:') {
-                    return parsed.toString();
-                }
-                if (protocol === 'data:' && /^data:image\//i.test(parsed.href)) {
-                    return parsed.href;
-                }
-            } catch (e) {
-                return null;
-            }
-            return null;
-        }
-
-        function renderRobotImage(container, imageUrl, category, name) {
-            if (!container) return;
-            container.replaceChildren();
-
-            const safeUrl = getSafeImageUrl(imageUrl);
-            if (safeUrl) {
-                const img = document.createElement('img');
-                img.src = safeUrl;
-                img.alt = name || 'Robot image';
-                container.appendChild(img);
-                return;
-            }
-
-            container.textContent = getCategoryEmoji(category);
-        }
-
-        function createIconSvg(paths) {
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '16');
-            svg.setAttribute('height', '16');
-            svg.setAttribute('viewBox', '0 0 24 24');
-            svg.setAttribute('fill', 'none');
-            svg.setAttribute('stroke', 'currentColor');
-            svg.setAttribute('stroke-width', '2');
-
-            paths.forEach((d) => {
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', d);
-                svg.appendChild(path);
-            });
-
-            return svg;
-        }
-
-        /**
-         * Add card from normalized Robot object
-         * @param {import('./models/robot.js').Robot} robot
-         */
-        function addRobotCardFromRobot(robot) {
-
-            const card = document.createElement('article');
-            card.className = 'market-card';
-            // Only store id for DOM lookup, all data comes from robotsMap
-            card.dataset.robotId = robot.id;
-            // Keep category for filtering
-            card.dataset.category = robot.category;
-
-            // Check if current user is owner (using full wallet address from Robot object)
-            const isOwner = isWalletConnected() && getConnectedWallet() === robot.ownerWallet;
-
-            const top = document.createElement('div');
-            top.className = 'market-card-top';
-
-            const categorySpan = document.createElement('span');
-            categorySpan.className = 'market-category';
-            categorySpan.textContent = formatCategory(robot.category);
-            top.appendChild(categorySpan);
-
-            if (isOwner) {
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'owner-actions';
-
-                const editBtn = document.createElement('button');
-                editBtn.className = 'btn-owner btn-edit';
-                editBtn.type = 'button';
-                editBtn.title = 'Edit';
-                editBtn.appendChild(createIconSvg([
-                    'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7',
-                    'M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'
-                ]));
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn-owner btn-delete';
-                deleteBtn.type = 'button';
-                deleteBtn.title = 'Delete';
-                deleteBtn.appendChild(createIconSvg([
-                    'M3 6h18',
-                    'M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6'
-                ]));
-
-                actionsDiv.appendChild(editBtn);
-                actionsDiv.appendChild(deleteBtn);
-                top.appendChild(actionsDiv);
-            }
-
-            const imageDiv = document.createElement('div');
-            imageDiv.className = 'market-card-image';
-            renderRobotImage(imageDiv, robot.imageUrl, robot.category, robot.name);
-
-            const body = document.createElement('div');
-            body.className = 'market-card-body';
-
-            const title = document.createElement('h4');
-            title.className = 'market-card-title';
-            title.textContent = robot.name;
-
-            const desc = document.createElement('p');
-            desc.className = 'market-card-desc';
-            desc.textContent = robot.description;
-
-            const footer = document.createElement('div');
-            footer.className = 'market-card-footer';
-
-            const price = document.createElement('span');
-            price.className = 'market-price';
-            price.textContent = `$${robot.price}/${robot.priceUnit}`;
-
-            footer.appendChild(price);
-            body.appendChild(title);
-            body.appendChild(desc);
-            body.appendChild(footer);
-
-            const actions = document.createElement('div');
-            actions.className = 'market-card-actions';
-            const rentBtn = document.createElement('button');
-            rentBtn.className = 'btn-rent';
-            rentBtn.type = 'button';
-            rentBtn.textContent = 'Rent Now';
-            actions.appendChild(rentBtn);
-
-            card.appendChild(top);
-            card.appendChild(imageDiv);
-            card.appendChild(body);
-            card.appendChild(actions);
-
-            // Use robot.id from robotsMap for all operations
-            rentBtn.addEventListener('click', () => openRentModalById(robot.id));
-
-            // Add owner action listeners if owner
-            const editBtn = card.querySelector('.btn-edit');
-            const deleteBtn = card.querySelector('.btn-delete');
-            if (editBtn) editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModalById(robot.id); });
-            if (deleteBtn) deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModalById(robot.id); });
-
-            robotsGrid.appendChild(card);
-
-            // Add animate-in class for visibility (with small delay for animation effect)
-            setTimeout(() => card.classList.add('animate-in'), 50);
-        }
-
-        /**
-         * Legacy function for backward compatibility with raw DB data
-         * @deprecated Use addRobotCardFromRobot with normalizeRobot instead
-         */
-        function addRobotCardFromDB(rawRobot) {
-            const robot = normalizeRobot(rawRobot);
-            robotsMap.set(robot.id, robot);
-            addRobotCardFromRobot(robot);
-        }
-
-        /**
-         * Refresh ownership UI for all robot cards
-         * Called after wallet connect/disconnect or robots load
-         */
-        function refreshOwnershipUI() {
-            const connectedWallet = getConnectedWallet();
-            const cards = robotsGrid?.querySelectorAll('[data-robot-id]');
-
-            if (!cards) return;
-
-            cards.forEach(card => {
-                const robotId = card.dataset.robotId;
-                const robot = robotsMap.get(robotId);
-
-                if (!robot) return;
-
-                const isOwner = connectedWallet && robot.ownerWallet === connectedWallet;
-                const existingActions = card.querySelector('.owner-actions');
-
-                if (isOwner && !existingActions) {
-                    // Add owner actions if owner and not already present
-                    const topDiv = card.querySelector('.market-card-top');
-                    if (topDiv) {
-                        const actionsDiv = document.createElement('div');
-                        actionsDiv.className = 'owner-actions';
-
-                        const editBtn = document.createElement('button');
-                        editBtn.className = 'btn-owner btn-edit';
-                        editBtn.type = 'button';
-                        editBtn.title = 'Edit';
-                        editBtn.appendChild(createIconSvg([
-                            'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7',
-                            'M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'
-                        ]));
-
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'btn-owner btn-delete';
-                        deleteBtn.type = 'button';
-                        deleteBtn.title = 'Delete';
-                        deleteBtn.appendChild(createIconSvg([
-                            'M3 6h18',
-                            'M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6'
-                        ]));
-
-                        actionsDiv.appendChild(editBtn);
-                        actionsDiv.appendChild(deleteBtn);
-
-                        // Add event listeners
-                        editBtn?.addEventListener('click', (e) => { e.stopPropagation(); openEditModalById(robotId); });
-                        deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModalById(robotId); });
-
-                        topDiv.appendChild(actionsDiv);
-                    }
-                } else if (!isOwner && existingActions) {
-                    // Remove owner actions if not owner anymore
-                    existingActions.remove();
-                }
-            });
-
-            log.debug('[Marketplace]', 'refreshOwnershipUI completed, connected wallet:', connectedWallet ? connectedWallet.slice(0, 8) + '...' : 'none');
-        }
-
-        // ============ TEXT VALIDATION & NORMALIZATION ============
-        const TEXT_LIMITS = {
-            name: 60,
-            description: 500,
-            speed: 30,
-            payload: 30,
-            battery: 30,
-            location: 100,
-            contact: 120
-        };
-
-        /**
-         * Normalize text: trim, collapse multiple spaces to single
-         * @param {string} text
-         * @returns {string}
-         */
-        function normalizeText(text) {
-            if (!text || typeof text !== 'string') return '';
-            return text.trim().replace(/\s+/g, ' ');
-        }
-
-        /**
-         * Validate and normalize robot form data
-         * @param {Object} data - Raw form data
-         * @returns {{ valid: boolean, data?: Object, error?: string }}
-         */
-        function validateRobotData(data) {
-            // Normalize all text fields
-            const normalized = {
-                ...data,
-                name: normalizeText(data.name),
-                description: normalizeText(data.description),
-                speed: normalizeText(data.speed),
-                payload: normalizeText(data.payload),
-                battery: normalizeText(data.battery),
-                location: normalizeText(data.location),
-                contact: normalizeText(data.contact)
-            };
-
-            // Validate required fields
-            if (!normalized.name) {
-                return { valid: false, error: 'Robot name is required' };
-            }
-            if (!normalized.description) {
-                return { valid: false, error: 'Description is required' };
-            }
-            if (!normalized.contact) {
-                return { valid: false, error: 'Contact info is required' };
-            }
-
-            // Validate length limits
-            if (normalized.name.length > TEXT_LIMITS.name) {
-                return { valid: false, error: `Name must be ${TEXT_LIMITS.name} characters or less` };
-            }
-            if (normalized.description.length > TEXT_LIMITS.description) {
-                return { valid: false, error: `Description must be ${TEXT_LIMITS.description} characters or less` };
-            }
-            if (normalized.contact.length > TEXT_LIMITS.contact) {
-                return { valid: false, error: `Contact must be ${TEXT_LIMITS.contact} characters or less` };
-            }
-
-            return { valid: true, data: normalized };
         }
 
         // Category Filter
@@ -792,246 +367,140 @@
                     filterBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
 
-                    const category = btn.dataset.category;
-
-                    // Guard: check robotsGrid exists
-                    if (!robotsGrid) return;
-
-                    const cards = robotsGrid.querySelectorAll('.market-card');
-
-                    // Guard: handle empty/null cards
-                    if (!cards || !cards.length) return;
-
-                    cards.forEach(card => {
-                        if (category === 'all' || card.dataset.category === category) {
-                            card.style.display = '';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
+                    activeCategory = btn.dataset.category || 'all';
+                    applyFiltersAndSort();
                 });
             });
         }
 
-        // Add Robot Form
-        function setupAddRobotForm() {
-            const imageInput = document.getElementById('robotImage');
-            const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-            const uploadPreview = document.getElementById('uploadPreview');
-            const previewImg = document.getElementById('previewImg');
-            const removeImageBtn = document.getElementById('removeImage');
+        function setupSearchAndSort() {
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    searchTerm = (e.target.value || '').toString();
+                    applyFiltersAndSort();
+                });
+            }
 
-            // Click to upload
-            uploadPlaceholder?.addEventListener('click', () => imageInput.click());
-
-            // Handle file selection
-            imageInput?.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 5 * 1024 * 1024) {
-                        notify.error('Image must be under 5MB');
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        previewImg.src = ev.target.result;
-                        uploadPlaceholder.hidden = true;
-                        uploadPreview.hidden = false;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            // Remove image
-            removeImageBtn?.addEventListener('click', () => {
-                imageInput.value = '';
-                previewImg.src = '';
-                uploadPlaceholder.hidden = false;
-                uploadPreview.hidden = true;
-            });
-
-            // Form submission
-            addRobotForm?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                // Offline guard
-                if (!navigator.onLine) {
-                    notify.error('No internet connection');
-                    return;
-                }
-
-                // Wallet guard
-                if (!requireWalletOrPrompt()) return;
-
-                const submitBtn = document.getElementById('submitRobot');
-                const loadingText = robotToEdit ? 'Saving...' : 'Listing...';
-
-                await withLoading(submitBtn, async () => {
-                    // Get form data
-                    const formData = new FormData(addRobotForm);
-                    const imageFile = imageInput.files[0] || null;
-
-                    const walletAddress = getConnectedWallet();
-                    if (!walletAddress) {
-                        notify.error('Wallet disconnected. Please reconnect.');
-                        return;
-                    }
-
-                    const rawData = {
-                        ownerWallet: walletAddress,
-                        name: formData.get('name'),
-                        category: formData.get('category'),
-                        description: formData.get('description'),
-                        price: formData.get('price'),
-                        priceUnit: formData.get('priceUnit'),
-                        speed: formData.get('speed'),
-                        payload: formData.get('payload'),
-                        battery: formData.get('battery'),
-                        location: formData.get('location'),
-                        contact: formData.get('contact')
-                    };
-
-                    // Validate and normalize
-                    const validation = validateRobotData(rawData);
-                    if (!validation.valid) {
-                        notify.error(validation.error);
-                        return;
-                    }
-
-                    const robotData = validation.data;
-                    let result;
-
-                    // Check if we're editing or adding
-                    if (robotToEdit) {
-                        // Use robot.id from Robot object (not from dataset)
-                        result = await updateRobotInDB(robotToEdit.id, robotData, imageFile);
-
-                        if (result.success) {
-                            // Update robotsMap with normalized data
-                            const updatedRobot = normalizeRobot(result.data);
-                            robotsMap.set(updatedRobot.id, updatedRobot);
-
-                            // Update card in DOM by robotId
-                            const card = robotsGrid.querySelector(`[data-robot-id="${robotToEdit.id}"]`);
-                            if (card) {
-                                card.dataset.category = updatedRobot.category;
-                                card.querySelector('.market-card-title').textContent = updatedRobot.name;
-                                card.querySelector('.market-card-desc').textContent = updatedRobot.description;
-                                card.querySelector('.market-category').textContent = updatedRobot.category.charAt(0).toUpperCase() + updatedRobot.category.slice(1);
-                                card.querySelector('.market-price').textContent = `$${updatedRobot.price}/${updatedRobot.priceUnit}`;
-
-                                // Update image in DOM if new image was uploaded
-                                if (updatedRobot.imageUrl) {
-                                    const imageEl = card.querySelector('.market-card-image');
-                                    // Add cache-buster to force reload
-                                    const imgUrl = `${updatedRobot.imageUrl}?v=${Date.now()}`;
-                                    renderRobotImage(imageEl, imgUrl, updatedRobot.category, updatedRobot.name);
-                                }
-                            }
-
-                            closeModal(addRobotModal);
-                            resetAddRobotForm();
-                            notify.success('Robot updated');
-                            robotToEdit = null;
-                        } else {
-                            notify.error('Could not update robot. Please try again.');
-                        }
-
-                    } else {
-                        // Add new robot
-                        result = await saveRobotToDB(robotData, imageFile);
-
-                        if (result.success) {
-                            // Add card to grid
-                            if (result.data.id) {
-                                addRobotCardFromDB(result.data);
-                            } else {
-                                addRobotCard(robotData);
-                            }
-
-                            addRobotForm.reset();
-                            uploadPlaceholder.hidden = false;
-                            uploadPreview.hidden = true;
-                            updateEmptyState();
-
-                            // Show success modal
-                            showRobotAddedSuccess();
-                        } else {
-                            showRobotAddedError(result.error);
-                        }
-                    }
-                }, { loadingText });
-            });
+            if (sortSelect) {
+                sortSelect.addEventListener('change', (e) => {
+                    sortMode = (e.target.value || 'newest').toString();
+                    applyFiltersAndSort();
+                });
+            }
         }
 
-        function addRobotCard(data) {
-            const card = document.createElement('article');
-            card.className = 'market-card';
-            card.dataset.category = data.category;
-            card.dataset.name = data.name;
-            card.dataset.price = data.price;
-            card.dataset.unit = data.priceUnit;
-            card.dataset.contact = data.contact;
+        function setViewMode(mode) {
+            const target = mode === 'mine' ? 'mine' : 'all';
+            if (target === 'mine' && !requireWalletOrPrompt()) {
+                return;
+            }
+            viewMode = target;
+            if (viewAllBtn) viewAllBtn.classList.toggle('active', viewMode === 'all');
+            if (viewMineBtn) viewMineBtn.classList.toggle('active', viewMode === 'mine');
+            applyFiltersAndSort();
+        }
 
-            const top = document.createElement('div');
-            top.className = 'market-card-top';
+        function setupViewToggle() {
+            if (viewAllBtn) {
+                viewAllBtn.addEventListener('click', () => setViewMode('all'));
+            }
+            if (viewMineBtn) {
+                viewMineBtn.addEventListener('click', () => setViewMode('mine'));
+            }
+            setViewMode('all');
+        }
 
-            const categorySpan = document.createElement('span');
-            categorySpan.className = 'market-category';
-            categorySpan.textContent = formatCategory(data.category);
-            top.appendChild(categorySpan);
+        function ensureInfiniteSentinel() {
+            if (marketplaceSentinel || !robotsGrid) return;
+            marketplaceSentinel = document.getElementById('marketplaceSentinel');
+            if (!marketplaceSentinel) {
+                marketplaceSentinel = document.createElement('div');
+                marketplaceSentinel.id = 'marketplaceSentinel';
+                marketplaceSentinel.className = 'marketplace-sentinel';
+                const parent = robotsGrid.parentNode;
+                if (parent) {
+                    parent.insertBefore(marketplaceSentinel, marketplaceEmpty || null);
+                }
+            }
+        }
 
-            const imageDiv = document.createElement('div');
-            imageDiv.className = 'market-card-image';
-            renderRobotImage(imageDiv, null, data.category, data.name);
+        function setupInfiniteScroll() {
+            if (!robotsGrid) return;
+            ensureInfiniteSentinel();
 
-            const body = document.createElement('div');
-            body.className = 'market-card-body';
+            if (!marketplaceSentinel) return;
 
-            const title = document.createElement('h4');
-            title.className = 'market-card-title';
-            title.textContent = data.name;
+            if (infiniteObserver) {
+                infiniteObserver.disconnect();
+            }
 
-            const desc = document.createElement('p');
-            desc.className = 'market-card-desc';
-            desc.textContent = data.description;
+            infiniteObserver = new IntersectionObserver((entries) => {
+                const hit = entries.some(entry => entry.isIntersecting);
+                if (hit) {
+                    loadRobotsFromDB();
+                }
+            }, { root: null, rootMargin: '600px 0px', threshold: 0 });
 
-            const footer = document.createElement('div');
-            footer.className = 'market-card-footer';
+            infiniteObserver.observe(marketplaceSentinel);
+        }
 
-            const price = document.createElement('span');
-            price.className = 'market-price';
-            price.textContent = `$${data.price}/${data.priceUnit}`;
+        function getCardSearchText(card) {
+            const name = card.dataset.name || '';
+            const category = card.dataset.category || '';
+            const desc = card.querySelector('.market-card-desc')?.textContent || '';
+            const contact = card.dataset.contact || '';
+            return `${name} ${category} ${desc} ${contact}`.toLowerCase();
+        }
 
-            footer.appendChild(price);
-            body.appendChild(title);
-            body.appendChild(desc);
-            body.appendChild(footer);
+        function sortCards(cards) {
+            const mode = sortMode;
+            const getPrice = (card) => parseFloat(card.dataset.price || '0') || 0;
+            const getName = (card) => (card.dataset.name || '').toLowerCase();
+            const getCreated = (card) => parseFloat(card.dataset.createdAt || '0') || 0;
 
-            const actions = document.createElement('div');
-            actions.className = 'market-card-actions';
-            const rentBtn = document.createElement('button');
-            rentBtn.className = 'btn-rent';
-            rentBtn.type = 'button';
-            rentBtn.textContent = 'Rent Now';
-            actions.appendChild(rentBtn);
+            if (mode === 'price-asc') {
+                cards.sort((a, b) => getPrice(a) - getPrice(b));
+            } else if (mode === 'price-desc') {
+                cards.sort((a, b) => getPrice(b) - getPrice(a));
+            } else if (mode === 'name-asc') {
+                cards.sort((a, b) => getName(a).localeCompare(getName(b)));
+            } else {
+                cards.sort((a, b) => getCreated(b) - getCreated(a));
+            }
+        }
 
-            card.appendChild(top);
-            card.appendChild(imageDiv);
-            card.appendChild(body);
-            card.appendChild(actions);
+        function applyFiltersAndSort() {
+            if (!robotsGrid) return;
 
-            // Add click handler for new card
-            rentBtn.addEventListener('click', () => openRentModal(card));
+            const cards = Array.from(robotsGrid.querySelectorAll('.market-card'));
+            if (!cards.length) {
+                updateFilteredState(0, 0);
+                return;
+            }
 
-            robotsGrid.insertBefore(card, robotsGrid.firstChild);
+            const term = searchTerm.trim().toLowerCase();
+            const wallet = getConnectedWallet();
+            let visibleCount = 0;
 
-             // Add animate-in class for visibility
-            setTimeout(() => card.classList.add('animate-in'), 50);
+            cards.forEach((card) => {
+                const category = card.dataset.category || '';
+                const matchesCategory = activeCategory === 'all' || category === activeCategory;
+                const matchesSearch = !term || getCardSearchText(card).includes(term);
+                const ownerWallet = card.dataset.ownerWallet || '';
+                const matchesOwner = viewMode !== 'mine' || (wallet && ownerWallet === wallet);
+                const matches = matchesCategory && matchesSearch && matchesOwner;
+                card.classList.toggle('is-hidden', !matches);
+                if (matches) visibleCount += 1;
+            });
 
+            const visibleCards = cards.filter(card => !card.classList.contains('is-hidden'));
+            const hiddenCards = cards.filter(card => card.classList.contains('is-hidden'));
 
-            // Update empty state
-            updateEmptyState();
+            sortCards(visibleCards);
+            visibleCards.forEach(card => robotsGrid.appendChild(card));
+            hiddenCards.forEach(card => robotsGrid.appendChild(card));
+
+            updateFilteredState(cards.length, visibleCount);
         }
 
         /**
@@ -1052,8 +521,8 @@
             currentRobot = robot;
 
             document.getElementById('rentRobotName').textContent = robot.name;
-            renderRobotImage(document.getElementById('rentRobotImage'), robot.imageUrl, robot.category, robot.name);
-            document.getElementById('rentCategory').textContent = formatCategory(robot.category);
+            cardRenderer.renderRobotImage(document.getElementById('rentRobotImage'), robot.imageUrl, robot.category, robot.name);
+            document.getElementById('rentCategory').textContent = cardRenderer.formatCategory(robot.category);
             document.getElementById('rentDescription').textContent = robot.description;
             document.getElementById('rentPrice').textContent = `$${robot.price}/${robot.priceUnit}`;
             document.getElementById('rentTotal').textContent = `$${robot.price}`;
@@ -1084,8 +553,8 @@
                     contact: card.dataset.contact || null,
                 };
                 document.getElementById('rentRobotName').textContent = currentRobot.name;
-                renderRobotImage(document.getElementById('rentRobotImage'), currentRobot.imageUrl, currentRobot.category, currentRobot.name);
-                document.getElementById('rentCategory').textContent = formatCategory(currentRobot.category);
+                cardRenderer.renderRobotImage(document.getElementById('rentRobotImage'), currentRobot.imageUrl, currentRobot.category, currentRobot.name);
+                document.getElementById('rentCategory').textContent = cardRenderer.formatCategory(currentRobot.category);
                 document.getElementById('rentDescription').textContent = currentRobot.description;
                 document.getElementById('rentPrice').textContent = `$${currentRobot.price}/${currentRobot.priceUnit}`;
                 document.getElementById('rentTotal').textContent = `$${currentRobot.price}`;
@@ -1214,53 +683,6 @@
                 deleteRobotModal = document.getElementById('deleteRobotModal');
                 document.getElementById('deleteRobotName').textContent = robotToDelete.name;
                 openModal(deleteRobotModal);
-            }
-        }
-
-        async function deleteRobotFromDB(robotId) {
-            if (!supabase) {
-                log.info('[Marketplace]', 'Demo mode: Robot not deleted from DB');
-                return { success: true };
-            }
-
-              const jwt = getWalletJWT();
-            if (!jwt) {
-                return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
-            }
-
-            try {
-                // First, get the image URL to delete from storage
-                const robotData = await safeSelect(
-                    supabase
-                        .from('robots')
-                        .select('image_url')
-                        .eq('id', robotId),
-                    'Failed to fetch robot data'
-                );
-
-                const robot = robotData?.[0];
-
-                // Delete from database with wallet header
-                await safeDelete(
-                     supabase
-                        .from('robots')
-                        .delete()
-                        .eq('id', robotId),
-                    'Failed to delete robot'
-                );
-
-                // Delete image from storage if exists
-                if (robot?.image_url) {
-                    const fileName = robot.image_url.split('/').pop();
-                    await safeStorageDelete(
-                        supabase.storage.from('robot-images').remove([fileName])
-                    );
-                }
-
-                return { success: true };
-            } catch (err) {
-                log.error('[Marketplace]', 'Error deleting robot:', err);
-                return { success: false, error: err.message };
             }
         }
 
@@ -1406,112 +828,6 @@
             }
         }
 
-        async function updateRobotInDB(robotId, robotData, imageFile = null) {
-            if (!supabase) {
-                log.info('[Marketplace]', 'Demo mode: Robot not updated in DB');
-                return { success: true, data: robotData };
-            }
-
-            // Get client with JWT auth for RLS
-            const jwt = getWalletJWT();
-            if (!jwt) {
-                return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
-            }
-
-            try {
-                let imageUrl = null;
-                let uploadedFileName = null;
-                let oldImageFileName = null;
-
-                // Upload new image if provided (do this first, before DB update)
-                if (imageFile) {
-                    // Get old image URL to delete later (non-critical - if fails, just skip deletion)
-                    try {
-                        const oldRobotData = await safeSelect(
-                            supabase
-                                .from('robots')
-                                .select('image_url')
-                                .eq('id', robotId),
-                            'Failed to fetch robot data'
-                        );
-
-                        const oldRobot = oldRobotData?.[0];
-                        if (oldRobot?.image_url) {
-                            oldImageFileName = oldRobot.image_url.split('/robot-images/')[1];
-                        }
-                    } catch (e) {
-                        // Non-critical: if we can't get old image URL, just skip deletion later
-                        log.warn('[Marketplace]', 'Could not fetch old image URL:', e.message);
-                    }
-
-                    // Upload new image with unique path
-                    const fileExt = imageFile.name.split('.').pop();
-                    uploadedFileName = `${robotId}/${Date.now()}.${fileExt}`;
-
-                    await safeUpload(
-                        supabase.storage
-                            .from('robot-images')
-                            .upload(uploadedFileName, imageFile),
-                        'Failed to upload image'
-                    );
-
-                    const { data: urlData } = supabase.storage
-                        .from('robot-images')
-                        .getPublicUrl(uploadedFileName);
-
-                    imageUrl = urlData.publicUrl;
-                }
-
-                // Build update object
-                const updateData = {
-                    name: robotData.name,
-                    category: robotData.category,
-                    description: robotData.description,
-                    price: robotData.price,
-                    price_unit: robotData.priceUnit,
-                    contact: robotData.contact
-                };
-
-                // Add image_url only if new image was uploaded
-                if (imageUrl) {
-                    updateData.image_url = imageUrl;
-                }
-
-                // Update DB with wallet header
-                try {
-                    const data = await safeUpdate(
-                        supabase
-                            .from('robots')
-                            .update(updateData)
-                            .eq('id', robotId)
-                            .select()
-                            .single(),
-                        'Failed to update robot'
-                    );
-
-                    // DB update succeeded - now safe to delete old image
-                    if (oldImageFileName) {
-                        await safeStorageDelete(
-                            supabase.storage.from('robot-images').remove([oldImageFileName])
-                        );
-                    }
-
-                    return { success: true, data: data };
-                } catch (dbError) {
-                    // DB update failed - cleanup newly uploaded image
-                    if (uploadedFileName) {
-                        await safeStorageDelete(
-                            supabase.storage.from('robot-images').remove([uploadedFileName])
-                        );
-                    }
-                    throw dbError;
-                }
-            } catch (err) {
-                log.error('[Marketplace]', 'Error updating robot:', err);
-                return { success: false, error: err.message };
-            }
-        }
-
         // Setup Event Listeners
         function setupEventListeners() {
             // Add Robot button (header)
@@ -1592,22 +908,67 @@
             robotsGrid = document.getElementById('robotsGrid');
             marketplaceEmpty = document.getElementById('marketplaceEmpty');
             filterBtns = document.querySelectorAll('.filter-btn');
+            marketplaceNoResults = document.getElementById('marketplaceNoResults');
+            searchInput = document.getElementById('marketplaceSearch');
+            sortSelect = document.getElementById('marketplaceSort');
+            viewAllBtn = document.getElementById('marketplaceViewAll');
+            viewMineBtn = document.getElementById('marketplaceViewMine');
+            marketplaceSentinel = document.getElementById('marketplaceSentinel');
             walletModal = document.getElementById('walletModal');
             walletModalOverlay = document.getElementById('walletModalOverlay');
             robotAddedModal = document.getElementById('robotAddedModal');
             robotErrorModal = document.getElementById('robotErrorModal');
 
+            cardRenderer = createCardRenderer({
+                robotsMap,
+                robotsGrid,
+                isWalletConnected,
+                getConnectedWallet,
+                openEditModalById,
+                openDeleteModalById,
+                openRentModalById,
+                openRentModal,
+                updateEmptyState,
+                log
+            });
+
             // Initialize Supabase
             await initSupabase();
 
             // Load robots from DB (async, will call refreshOwnershipUI when done)
-            loadRobotsFromDB().then(() => {
+            setupInfiniteScroll();
+            loadRobotsFromDB({ reset: true }).then(() => {
                 // Refresh ownership UI after robots are loaded
-                refreshOwnershipUI();
+                cardRenderer.refreshOwnershipUI();
             });
 
             setupFilters();
-            setupAddRobotForm();
+            setupSearchAndSort();
+            setupViewToggle();
+            const { resetAddRobotForm: resetForm } = initRobotForm({
+                addRobotForm,
+                addRobotModal,
+                robotAddedModal,
+                robotErrorModal,
+                robotsGrid,
+                robotsMap,
+                openModal,
+                closeModal,
+                updateEmptyState,
+                withLoading,
+                notify,
+                validateRobotData,
+                saveRobotToDB,
+                updateRobotInDB,
+                normalizeRobot,
+                cardRenderer,
+                getConnectedWallet,
+                requireWalletOrPrompt,
+                getRobotToEdit: () => robotToEdit,
+                setRobotToEdit: (value) => { robotToEdit = value; },
+                refreshMarketplaceView: applyFiltersAndSort
+            });
+            resetAddRobotForm = resetForm;
             setupRentModal();
             setupDeleteModal();
             setupEventListeners();
@@ -1616,11 +977,19 @@
             // Listen for wallet connect/disconnect events from wallet.js
             window.addEventListener('wallet-connected', () => {
                 log.debug('[Marketplace]', 'wallet-connected event received');
-                refreshOwnershipUI();
+                cardRenderer.refreshOwnershipUI();
+                applyFiltersAndSort();
             });
 
             window.addEventListener('wallet-disconnected', () => {
                 log.debug('[Marketplace]', 'wallet-disconnected event received');
-                refreshOwnershipUI();
+                cardRenderer.refreshOwnershipUI();
+                if (viewMode === 'mine') {
+                    setViewMode('all');
+                } else {
+                    applyFiltersAndSort();
+                }
             });
         }
+
+
