@@ -15,8 +15,8 @@ export async function withLoading(buttonEl, asyncFn, options = {}) {
         return;
     }
 
-    // Save original state - use innerHTML to preserve complex markup (icons, badges, etc.)
-    const originalHTML = buttonEl.innerHTML;
+    // Save original state without innerHTML to avoid injection risks
+    const originalChildren = Array.from(buttonEl.childNodes).map((node) => node.cloneNode(true));
     const originalDisabled = buttonEl.disabled;
 
     // Set loading state
@@ -28,9 +28,9 @@ export async function withLoading(buttonEl, asyncFn, options = {}) {
         const result = await asyncFn();
         return result;
     } finally {
-        // Restore original state - innerHTML restores full markup
+        // Restore original state
         buttonEl.disabled = originalDisabled;
-        buttonEl.innerHTML = originalHTML;
+        buttonEl.replaceChildren(...originalChildren);
         buttonEl.classList.remove('is-loading');
     }
 }
@@ -47,7 +47,6 @@ function setLoadingContent(buttonEl, loadingText) {
         textSpan.textContent = loadingText;
     } else {
         // No text span - replace entire content
-        // This is safe because we restore innerHTML in finally
         buttonEl.textContent = loadingText;
     }
 }

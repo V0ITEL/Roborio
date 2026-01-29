@@ -2,11 +2,27 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
 import nacl from "https://esm.sh/tweetnacl@1.0.3";
 import { decode as decodeBase58 } from "https://deno.land/std@0.168.0/encoding/base58.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const NONCE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const ALLOWED_CLOCK_SKEW_MS = 2 * 60 * 1000; // 2 minutes
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  : null;
+
+function extractFromMessage(message: string, label: string): string | null {
+  const regex = new RegExp(`${label}:\\s*(.+)`);
+  const match = message.match(regex);
+  return match ? match[1].trim() : null;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -14,20 +30,93 @@ serve(async (req) => {
   }
 
   try {
-    const { wallet, signature, message, nonce } = await req.json();
+    const { wallet, signature, message, nonce, timestamp, origin } = await req.json();
 
-    if (!wallet || !signature || !message || !nonce) {
+    if (!wallet || !signature || !message || !nonce || !timestamp) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: wallet, signature, message, nonce" }),
+        JSON.stringify({ error: "Missing required fields: wallet, signature, message, nonce, timestamp" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    if (!message.includes(nonce)) {
+    const messageNonce = extractFromMessage(message, "Nonce");
+    const messageTimestamp = extractFromMessage(message, "Timestamp");
+    const messageOrigin = extractFromMessage(message, "Origin");
+
+    if (!messageNonce || messageNonce !== nonce) {
       return new Response(
         JSON.stringify({ error: "Invalid message: nonce mismatch" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    if (!messageTimestamp || Number.isNaN(Number(messageTimestamp)) || Number(messageTimestamp) !== Number(timestamp)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid message: timestamp mismatch" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const now = Date.now();
+    const ts = Number(timestamp);
+    const maxAge = NONCE_TTL_MS + ALLOWED_CLOCK_SKEW_MS;
+    if (Math.abs(now - ts) > maxAge) {
+      return new Response(
+        JSON.stringify({ error: "Invalid message: timestamp outside allowed window" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Enforce origin binding if available
+    const reqOrigin = req.headers.get("origin") || "";
+    if (messageOrigin && origin && messageOrigin !== origin) {
+      return new Response(
+        JSON.stringify({ error: "Invalid message: origin mismatch" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (reqOrigin && origin && reqOrigin !== origin) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request origin" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Replay protection (persistent)
+    if (!supabase) {
+      console.error("Supabase client not initialized (missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const expiresAt = new Date(now + NONCE_TTL_MS).toISOString();
+    const { error: insertError } = await supabase
+      .from("auth_nonces")
+      .insert({ nonce, wallet, expires_at: expiresAt });
+
+    if (insertError) {
+      if (insertError.code === "23505") {
+        return new Response(
+          JSON.stringify({ error: "Nonce already used" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      console.error("Nonce insert error:", insertError);
+      return new Response(
+        JSON.stringify({ error: "Server error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Best-effort cleanup of expired nonces
+    try {
+      const cutoff = new Date(now - ALLOWED_CLOCK_SKEW_MS).toISOString();
+      await supabase.from("auth_nonces").delete().lt("expires_at", cutoff);
+    } catch (cleanupError) {
+      console.warn("Nonce cleanup warning:", cleanupError?.message ?? cleanupError);
     }
 
     // Decode wallet public key (base58)

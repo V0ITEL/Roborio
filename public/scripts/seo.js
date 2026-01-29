@@ -71,7 +71,7 @@
           "name": "What is Roborio?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Roborio is a decentralized marketplace built on Solana where businesses can rent robots on-demand. Think of it as Uber for robots — operators list their robots, businesses rent them for specific tasks, and payments are handled automatically via smart contracts."
+            "text": "Roborio is a decentralized marketplace built on Solana where businesses can rent robots on-demand. Think of it as Uber for robots - operators list their robots, businesses rent them for specific tasks, and payments are handled automatically via smart contracts."
           }
         },
         {
@@ -111,7 +111,7 @@
           "name": "When will the marketplace launch?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The MVP demo is live today, and we’re onboarding pilot customers now. Join the waitlist to secure early access and priority reservations."
+            "text": "The MVP demo is live today, and we're onboarding pilot customers now. Join the waitlist to secure early access and priority reservations."
           }
         },
         {
@@ -127,7 +127,7 @@
           "name": "Is there an API for businesses?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes, our REST API allows businesses to integrate robot rentals directly into their operations. Schedule recurring tasks, manage fleets, track robots in real-time, and automate payments — all programmatically."
+            "text": "Yes, our REST API allows businesses to integrate robot rentals directly into their operations. Schedule recurring tasks, manage fleets, track robots in real-time, and automate payments - all programmatically."
           }
         }
       ]

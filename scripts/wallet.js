@@ -122,7 +122,8 @@ async function authenticateWallet(provider, publicKey) {
         // Generate nonce for replay protection
         const nonce = crypto.randomUUID();
         const timestamp = Date.now();
-        const message = `Sign in to Roborio\n\nNonce: ${nonce}\nTimestamp: ${timestamp}`;
+        const origin = window.location.origin;
+        const message = `Sign in to Roborio\n\nOrigin: ${origin}\nNonce: ${nonce}\nTimestamp: ${timestamp}`;
 
         // Request signature from wallet
         const encodedMessage = new TextEncoder().encode(message);
@@ -143,7 +144,9 @@ async function authenticateWallet(provider, publicKey) {
                 wallet: publicKey,
                 signature: signature,
                 message: message,
-                nonce: nonce
+                nonce: nonce,
+                timestamp: timestamp,
+                origin: origin
             })
         });
 
@@ -372,7 +375,7 @@ export function initWallet() {
                 jupiterSwapBtn.classList.remove('ready');
                 const span = document.createElement('span');
                 span.setAttribute('data-i18n', 'connectWalletFirst');
-                span.textContent = getCurrentLang() === 'ru' ? 'Сначала подключите кошелёк' : 'Connect Wallet First';
+                span.textContent = 'Connect Wallet First';
                 jupiterSwapBtn.replaceChildren(span);
             }
         }
@@ -460,7 +463,7 @@ export function initWallet() {
 
                 const textSpan = document.createElement('span');
                 textSpan.setAttribute('data-i18n', 'connectWallet');
-                textSpan.textContent = getCurrentLang() === 'ru' ? 'Подключить' : 'Connect Wallet';
+                textSpan.textContent = 'Connect Wallet';
 
                 btn.replaceChildren(svg, textSpan);
             }

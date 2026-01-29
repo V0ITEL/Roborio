@@ -79,6 +79,22 @@
             border-color: var(--accent);
         }
 
+        .inline-block {
+            display: inline-block;
+        }
+
+        .docs-help {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        .docs-help-text {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
         h1 {
             font-size: 48px;
             margin-bottom: 20px;
@@ -375,9 +391,9 @@
             <p>Token sale details will be announced soon. Follow our social channels for updates.</p>
         </div>
 
-        <div style="text-align: center; margin-top: 80px; padding-top: 40px; border-top: 1px solid var(--border);">
-            <p style="color: var(--text-muted); margin-bottom: 20px;">Need more help?</p>
-            <a href="/" class="back-btn" style="display: inline-block;">Return to Homepage</a>
+        <div class="docs-help">
+            <p class="docs-help-text">Need more help?</p>
+            <a href="/" class="back-btn inline-block">Return to Homepage</a>
         </div>
     </div>
 </body>

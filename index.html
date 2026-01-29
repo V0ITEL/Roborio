@@ -10,7 +10,7 @@
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
 
     <!-- Content Security Policy  -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://terminal.jup.ag; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.solana.com https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://terminal.jup.ag https://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://terminal.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.solana.com https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://terminal.jup.ag https://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://terminal.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
 
     <!-- Resource Hints for Performance -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -249,12 +249,12 @@
                 <!-- ASCII Robot -->
                 <div id="robotContainer" class="hero-robot">
                     <!-- Robot Loading State -->
-                    <div id="robotLoading" class="robot-loading" style="display: none;">
+                    <div id="robotLoading" class="robot-loading is-hidden">
                         <div class="robot-spinner"></div>
                         <p>Loading 3D Model...</p>
                     </div>
                     <!-- Robot Error State -->
-                    <div id="robotError" class="robot-error" style="display: none;">
+                    <div id="robotError" class="robot-error is-hidden">
                         <p>⚠️ Failed to load robot model</p>
                         <button class="btn btn-secondary btn-small" id="retryRobotLoad">Retry</button>
                     </div>
@@ -262,7 +262,7 @@
             </div>
             <div class="hero-content">
                 <h1 class="parallax-layer" data-speed="0.05"><span data-i18n="heroTitle">Robot-as-a-Service Marketplace on</span> <span class="highlight" id="solanaText">Solana</span></h1>
-                <p class="hero-description parallax-layer" data-speed="0.03" data-i18n="heroDesc">Roborio is an MVP marketplace demo for robot rentals. Discover verified operators, explore live listings, and reserve a pilot in minutes — no long sales cycles.</p>
+                <p class="hero-description parallax-layer" data-speed="0.03" data-i18n="heroDesc">Roborio is an MVP marketplace demo for robot rentals. Discover verified operators, explore live listings, and reserve a pilot in minutes - no long sales cycles.</p>
                 <div class="hero-buttons parallax-layer" data-speed="0.02">
                     <a href="#waitlist" class="btn btn-primary btn-glitch btn-shine btn-pulse" id="heroWaitlistCta" data-i18n="joinWaitlist">Join Waitlist</a>
                     <a href="#marketplace" class="btn btn-secondary" data-i18n="viewDemo">View Demo</a>
@@ -352,7 +352,7 @@
         <section class="section marketplace" id="marketplace" aria-labelledby="marketplace-heading">
             <div class="section-container">
                 <div class="marketplace-header">
-                    <div class="section-header" style="margin-bottom: 0;">
+                <div class="section-header section-header--tight">
                         <div class="marketplace-badge marketplace-badge--live">MVP Demo</div>
                         <h2 id="marketplace-heading" class="section-title" data-i18n="theRobotsMarketplace">The Robots Marketplace</h2>
                          <p class="section-desc" data-i18n="marketplaceDesc">Think Fiverr for robots. Operators list their robots, businesses reserve pilots fast. Pay in SOL or USDC.</p>
@@ -433,12 +433,12 @@
         <div class="modal-body">
             <div class="wallet-list">
                 <button class="wallet-option" data-wallet="phantom" aria-label="Connect with Phantom wallet (Recommended)">
-                    <img src="icons/phantom.svg" alt="Phantom" width="40" height="40" style="border-radius: 10px;" loading="lazy">
+                    <img src="icons/phantom.svg" alt="Phantom" width="40" height="40" class="wallet-icon-img" loading="lazy">
                     <span>Phantom</span>
                     <span class="wallet-tag">Recommended</span>
                 </button>
                 <button class="wallet-option" data-wallet="solflare" aria-label="Connect with Solflare wallet">
-                    <img src="icons/solflare.svg" alt="Solflare" width="40" height="40" style="border-radius: 10px;" loading="lazy">
+                    <img src="icons/solflare.svg" alt="Solflare" width="40" height="40" class="wallet-icon-img" loading="lazy">
                     <span>Solflare</span>
                 </button>
                 <button class="wallet-option" data-wallet="backpack" aria-label="Connect with Backpack wallet">
@@ -446,7 +446,7 @@
                     <span>Backpack</span>
                 </button>
             </div>
-            <p class="wallet-note">By connecting, you agree to our <a href="terms.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Terms of Service</a></p>
+            <p class="wallet-note">By connecting, you agree to our <a href="terms.html" target="_blank" class="text-link-accent">Terms of Service</a></p>
         </div>
     </div>
 
@@ -485,7 +485,7 @@
                 </div>
                 
                 <!-- Jupiter Terminal Preview -->
-                <div id="jupiterPreview" class="jupiter-preview" style="display: none;">
+                <div id="jupiterPreview" class="jupiter-preview is-hidden">
                     <div class="jupiter-terminal">
                         <div class="jupiter-header">
                             <span class="jupiter-logo">⚡</span>
@@ -553,7 +553,7 @@
                 </div>
                 
                 
-                <div id="jupiterTerminal" style="display: none;"></div>
+                <div id="jupiterTerminal" class="is-hidden"></div>
             </div>
         </div>
     </div>
@@ -818,6 +818,5 @@
     </div>
 
     <script type="module" src="scripts/main.js"></script>
-    <script src="i18n.js"></script>
 </body>
 </html>

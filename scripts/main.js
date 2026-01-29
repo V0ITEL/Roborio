@@ -111,7 +111,7 @@ const structuredData = [
                 "name": "What is Roborio?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Roborio is a decentralized marketplace built on Solana where businesses can rent robots on-demand. Think of it as Uber for robots — operators list their robots, businesses rent them for specific tasks, and payments are handled automatically via smart contracts."
+                    "text": "Roborio is a decentralized marketplace built on Solana where businesses can rent robots on-demand. Think of it as Uber for robots - operators list their robots, businesses rent them for specific tasks, and payments are handled automatically via smart contracts."
                 }
             },
             {
@@ -151,7 +151,7 @@ const structuredData = [
                 "name": "When will the marketplace launch?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "The MVP demo is live today, and we’re onboarding pilot customers now. Join the waitlist to secure early access and priority reservations."
+                    "text": "The MVP demo is live today, and we're onboarding pilot customers now. Join the waitlist to secure early access and priority reservations."
                 }
             },
             {
@@ -167,7 +167,7 @@ const structuredData = [
                 "name": "Is there an API for businesses?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Yes, our REST API allows businesses to integrate robot rentals directly into their operations. Schedule recurring tasks, manage fleets, track robots in real-time, and automate payments — all programmatically."
+                    "text": "Yes, our REST API allows businesses to integrate robot rentals directly into their operations. Schedule recurring tasks, manage fleets, track robots in real-time, and automate payments - all programmatically."
                 }
             }
         ]
@@ -639,7 +639,7 @@ async function loadExternalScripts() {
             const FRAME_INTERVAL = 1000 / TARGET_FPS;
             
             const FONT_SIZE = 14;
-            const matrixChars = 'ROBORIO$01アイウエオカキクケコサシスセソ◆◇□■●○'.split('');
+            const matrixChars = 'ROBORIO$01<>[]{}+-=/#*'.split('');
             
             function setupMatrix() {
                 matrixWidth = heroSection.offsetWidth;
@@ -782,7 +782,7 @@ async function loadExternalScripts() {
             { text: '> Connecting to Solana...', delay: 900, progress: 55, status: 'Connecting to blockchain...' },
             { text: '> Status: <span class="success">Connected</span>', delay: 1200, progress: 75, status: 'Blockchain connected!' },
             { text: '> Loading marketplace...', delay: 1500, progress: 90, status: 'Loading assets...' },
-            { text: '> Access: <span class="success">Granted ✓</span>', delay: 1800, progress: 100, status: 'Ready!' },
+            { text: '> Access: <span class="success">Granted</span>', delay: 1800, progress: 100, status: 'Ready!' },
         ];
 
         // Animate progress bar smoothly

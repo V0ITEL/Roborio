@@ -253,6 +253,35 @@ transform: translate(-50%, -50%) scale(0.8);
 .cursor.hidden {
 opacity: 0;
 }
+.is-hidden {
+display: none !important;
+}
+.inline-block {
+display: inline-block;
+}
+.section-header--tight {
+margin-bottom: 0;
+}
+.wallet-icon-img {
+border-radius: 10px;
+}
+.text-link-accent {
+color: var(--accent);
+text-decoration: underline;
+}
+.highlight-box--spaced {
+margin-top: 48px;
+}
+.docs-help {
+text-align: center;
+margin-top: 80px;
+padding-top: 40px;
+border-top: 1px solid var(--border);
+}
+.docs-help-text {
+color: var(--text-muted);
+margin-bottom: 20px;
+}
 @media (hover: none) and (pointer: coarse) {
 .cursor, .cursor-dot {
 display: none !important;
@@ -1433,14 +1462,14 @@ margin-bottom: 8px;
 margin-bottom: 0;
 }
 .roadmap-list li::before {
-content: '→';
+content: '->';
 position: absolute;
 left: 0;
 color: var(--accent);
 font-family: var(--font-mono);
 }
 .roadmap-item.completed .roadmap-list li::before {
-content: '✓';
+content: 'OK';
 }
 .roadmap-status {
 display: inline-flex;

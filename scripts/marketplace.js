@@ -269,6 +269,13 @@
         // Loading notice (injected once, toggled via hidden class)
         let loadingNotice = null;
 
+        function createNoticeIcon(text) {
+            const span = document.createElement('span');
+            span.className = 'notice-icon';
+            span.textContent = text;
+            return span;
+        }
+
         function updateLoadingNotice(show) {
             if (!robotsGrid) return;
 
@@ -277,7 +284,11 @@
                 loadingNotice = document.createElement('div');
                 loadingNotice.className = 'marketplace-notice hidden';
                 loadingNotice.id = 'marketplaceLoading';
-                loadingNotice.innerHTML = '<span class="notice-icon">⏳</span><span class="notice-text">Loading robots...</span>';
+                loadingNotice.appendChild(createNoticeIcon('⏳'));
+                const text = document.createElement('span');
+                text.className = 'notice-text';
+                text.textContent = 'Loading robots...';
+                loadingNotice.appendChild(text);
                 robotsGrid.parentNode.insertBefore(loadingNotice, robotsGrid);
             }
 
@@ -295,15 +306,21 @@
                 errorNotice = document.createElement('div');
                 errorNotice.className = 'marketplace-notice marketplace-notice--error hidden';
                 errorNotice.id = 'marketplaceError';
-                errorNotice.innerHTML = `
-                    <span class="notice-icon">⚠️</span>
-                    <span class="notice-text"></span>
-                    <button class="notice-retry" type="button">Retry</button>
-                `;
-                errorNotice.querySelector('.notice-retry').addEventListener('click', () => {
+                errorNotice.appendChild(createNoticeIcon('⚠️'));
+
+                const text = document.createElement('span');
+                text.className = 'notice-text';
+                errorNotice.appendChild(text);
+
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'notice-retry';
+                retryBtn.type = 'button';
+                retryBtn.textContent = 'Retry';
+                retryBtn.addEventListener('click', () => {
                     hideErrorNotice();
                     loadRobotsFromDB();
                 });
+                errorNotice.appendChild(retryBtn);
                 robotsGrid.parentNode.insertBefore(errorNotice, robotsGrid);
             }
 
@@ -450,16 +467,82 @@
             }
         }
 
+        const CATEGORY_EMOJIS = {
+            delivery: '🚚',
+            cleaning: '🧹',
+            security: '🛡️',
+            inspection: '🔍',
+            warehouse: '🤖',
+            agriculture: '🌾',
+            healthcare: '🏥',
+            hospitality: '🍽️'
+        };
+
+        function getCategoryEmoji(category) {
+            return CATEGORY_EMOJIS[category] || '🤖';
+        }
+
+        function formatCategory(category) {
+            if (!category) return '';
+            return category.charAt(0).toUpperCase() + category.slice(1);
+        }
+
+        function getSafeImageUrl(url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                const parsed = new URL(url, window.location.origin);
+                const protocol = parsed.protocol.toLowerCase();
+                if (protocol === 'http:' || protocol === 'https:' || protocol === 'blob:') {
+                    return parsed.toString();
+                }
+                if (protocol === 'data:' && /^data:image\//i.test(parsed.href)) {
+                    return parsed.href;
+                }
+            } catch (e) {
+                return null;
+            }
+            return null;
+        }
+
+        function renderRobotImage(container, imageUrl, category, name) {
+            if (!container) return;
+            container.replaceChildren();
+
+            const safeUrl = getSafeImageUrl(imageUrl);
+            if (safeUrl) {
+                const img = document.createElement('img');
+                img.src = safeUrl;
+                img.alt = name || 'Robot image';
+                container.appendChild(img);
+                return;
+            }
+
+            container.textContent = getCategoryEmoji(category);
+        }
+
+        function createIconSvg(paths) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '16');
+            svg.setAttribute('height', '16');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+            svg.setAttribute('stroke-width', '2');
+
+            paths.forEach((d) => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', d);
+                svg.appendChild(path);
+            });
+
+            return svg;
+        }
+
         /**
          * Add card from normalized Robot object
          * @param {import('./models/robot.js').Robot} robot
          */
         function addRobotCardFromRobot(robot) {
-
-            const categoryEmojis = {
-                delivery: '🚚', cleaning: '🧹', security: '🛡️', inspection: '🔍',
-                warehouse: '🤖', agriculture: '🌾', healthcare: '🏥', hospitality: '🍽️'
-            };
 
             const card = document.createElement('article');
             card.className = 'market-card';
@@ -468,34 +551,86 @@
             // Keep category for filtering
             card.dataset.category = robot.category;
 
-            const imageContent = robot.imageUrl
-                ? `<img src="${robot.imageUrl}" alt="${robot.name}" style="width:100%;height:100%;object-fit:cover;">`
-                : categoryEmojis[robot.category] || '🤖';
-
             // Check if current user is owner (using full wallet address from Robot object)
             const isOwner = isWalletConnected() && getConnectedWallet() === robot.ownerWallet;
 
-            card.innerHTML = `
-                <div class="market-card-top">
-                    <span class="market-category">${robot.category.charAt(0).toUpperCase() + robot.category.slice(1)}</span>
-                    ${isOwner ? `<div class="owner-actions">
-                        <button class="btn-owner btn-edit" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                        <button class="btn-owner btn-delete" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg></button>
-                    </div>` : ''}
-                </div>
-                <div class="market-card-image">${imageContent}</div>
-                <div class="market-card-body">
-                    <h4 class="market-card-title">${robot.name}</h4>
-                    <p class="market-card-desc">${robot.description}</p>
-                    <div class="market-card-footer">
-                        <span class="market-price">$${robot.price}/${robot.priceUnit}</span>
-                    </div>
-                </div>
-                <div class="market-card-actions"><button class="btn-rent">Rent Now</button></div>
-            `;
+            const top = document.createElement('div');
+            top.className = 'market-card-top';
+
+            const categorySpan = document.createElement('span');
+            categorySpan.className = 'market-category';
+            categorySpan.textContent = formatCategory(robot.category);
+            top.appendChild(categorySpan);
+
+            if (isOwner) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'owner-actions';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-owner btn-edit';
+                editBtn.type = 'button';
+                editBtn.title = 'Edit';
+                editBtn.appendChild(createIconSvg([
+                    'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7',
+                    'M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'
+                ]));
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-owner btn-delete';
+                deleteBtn.type = 'button';
+                deleteBtn.title = 'Delete';
+                deleteBtn.appendChild(createIconSvg([
+                    'M3 6h18',
+                    'M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6'
+                ]));
+
+                actionsDiv.appendChild(editBtn);
+                actionsDiv.appendChild(deleteBtn);
+                top.appendChild(actionsDiv);
+            }
+
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'market-card-image';
+            renderRobotImage(imageDiv, robot.imageUrl, robot.category, robot.name);
+
+            const body = document.createElement('div');
+            body.className = 'market-card-body';
+
+            const title = document.createElement('h4');
+            title.className = 'market-card-title';
+            title.textContent = robot.name;
+
+            const desc = document.createElement('p');
+            desc.className = 'market-card-desc';
+            desc.textContent = robot.description;
+
+            const footer = document.createElement('div');
+            footer.className = 'market-card-footer';
+
+            const price = document.createElement('span');
+            price.className = 'market-price';
+            price.textContent = `$${robot.price}/${robot.priceUnit}`;
+
+            footer.appendChild(price);
+            body.appendChild(title);
+            body.appendChild(desc);
+            body.appendChild(footer);
+
+            const actions = document.createElement('div');
+            actions.className = 'market-card-actions';
+            const rentBtn = document.createElement('button');
+            rentBtn.className = 'btn-rent';
+            rentBtn.type = 'button';
+            rentBtn.textContent = 'Rent Now';
+            actions.appendChild(rentBtn);
+
+            card.appendChild(top);
+            card.appendChild(imageDiv);
+            card.appendChild(body);
+            card.appendChild(actions);
 
             // Use robot.id from robotsMap for all operations
-            card.querySelector('.btn-rent').addEventListener('click', () => openRentModalById(robot.id));
+            rentBtn.addEventListener('click', () => openRentModalById(robot.id));
 
             // Add owner action listeners if owner
             const editBtn = card.querySelector('.btn-edit');
@@ -544,14 +679,29 @@
                     if (topDiv) {
                         const actionsDiv = document.createElement('div');
                         actionsDiv.className = 'owner-actions';
-                        actionsDiv.innerHTML = `
-                            <button class="btn-owner btn-edit" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                            <button class="btn-owner btn-delete" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg></button>
-                        `;
+
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn-owner btn-edit';
+                        editBtn.type = 'button';
+                        editBtn.title = 'Edit';
+                        editBtn.appendChild(createIconSvg([
+                            'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7',
+                            'M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'
+                        ]));
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn-owner btn-delete';
+                        deleteBtn.type = 'button';
+                        deleteBtn.title = 'Delete';
+                        deleteBtn.appendChild(createIconSvg([
+                            'M3 6h18',
+                            'M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6'
+                        ]));
+
+                        actionsDiv.appendChild(editBtn);
+                        actionsDiv.appendChild(deleteBtn);
 
                         // Add event listeners
-                        const editBtn = actionsDiv.querySelector('.btn-edit');
-                        const deleteBtn = actionsDiv.querySelector('.btn-delete');
                         editBtn?.addEventListener('click', (e) => { e.stopPropagation(); openEditModalById(robotId); });
                         deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModalById(robotId); });
 
@@ -774,8 +924,8 @@
                                 if (updatedRobot.imageUrl) {
                                     const imageEl = card.querySelector('.market-card-image');
                                     // Add cache-buster to force reload
-                                    const imgUrl = updatedRobot.imageUrl + '?v=' + Date.now();
-                                    imageEl.innerHTML = `<img src="${imgUrl}" alt="${updatedRobot.name}" style="width:100%;height:100%;object-fit:cover;">`;
+                                    const imgUrl = `${updatedRobot.imageUrl}?v=${Date.now()}`;
+                                    renderRobotImage(imageEl, imgUrl, updatedRobot.category, updatedRobot.name);
                                 }
                             }
 
@@ -815,11 +965,6 @@
         }
 
         function addRobotCard(data) {
-            const categoryEmojis = {
-                delivery: '🚚', cleaning: '🧹', security: '🛡️', inspection: '🔍',
-                warehouse: '🤖', agriculture: '🌾', healthcare: '🏥', hospitality: '🍽️'
-            };
-
             const card = document.createElement('article');
             card.className = 'market-card';
             card.dataset.category = data.category;
@@ -828,21 +973,56 @@
             card.dataset.unit = data.priceUnit;
             card.dataset.contact = data.contact;
 
-            card.innerHTML = `
-                <div class="market-card-top"><span class="market-category">${data.category.charAt(0).toUpperCase() + data.category.slice(1)}</span></div>
-                <div class="market-card-image">${categoryEmojis[data.category] || '🤖'}</div>
-                <div class="market-card-body">
-                    <h4 class="market-card-title">${data.name}</h4>
-                    <p class="market-card-desc">${data.description}</p>
-                    <div class="market-card-footer">
-                        <span class="market-price">$${data.price}/${data.priceUnit}</span>
-                    </div>
-                </div>
-                <div class="market-card-actions"><button class="btn-rent">Rent Now</button></div>
-            `;
+            const top = document.createElement('div');
+            top.className = 'market-card-top';
+
+            const categorySpan = document.createElement('span');
+            categorySpan.className = 'market-category';
+            categorySpan.textContent = formatCategory(data.category);
+            top.appendChild(categorySpan);
+
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'market-card-image';
+            renderRobotImage(imageDiv, null, data.category, data.name);
+
+            const body = document.createElement('div');
+            body.className = 'market-card-body';
+
+            const title = document.createElement('h4');
+            title.className = 'market-card-title';
+            title.textContent = data.name;
+
+            const desc = document.createElement('p');
+            desc.className = 'market-card-desc';
+            desc.textContent = data.description;
+
+            const footer = document.createElement('div');
+            footer.className = 'market-card-footer';
+
+            const price = document.createElement('span');
+            price.className = 'market-price';
+            price.textContent = `$${data.price}/${data.priceUnit}`;
+
+            footer.appendChild(price);
+            body.appendChild(title);
+            body.appendChild(desc);
+            body.appendChild(footer);
+
+            const actions = document.createElement('div');
+            actions.className = 'market-card-actions';
+            const rentBtn = document.createElement('button');
+            rentBtn.className = 'btn-rent';
+            rentBtn.type = 'button';
+            rentBtn.textContent = 'Rent Now';
+            actions.appendChild(rentBtn);
+
+            card.appendChild(top);
+            card.appendChild(imageDiv);
+            card.appendChild(body);
+            card.appendChild(actions);
 
             // Add click handler for new card
-            card.querySelector('.btn-rent').addEventListener('click', () => openRentModal(card));
+            rentBtn.addEventListener('click', () => openRentModal(card));
 
             robotsGrid.insertBefore(card, robotsGrid.firstChild);
 
@@ -871,18 +1051,9 @@
             // Set currentRobot from normalized Robot object
             currentRobot = robot;
 
-            const categoryEmojis = {
-                delivery: '🚚', cleaning: '🧹', security: '🛡️', inspection: '🔍',
-                warehouse: '🤖', agriculture: '🌾', healthcare: '🏥', hospitality: '🍽️'
-            };
-
-            const imageHtml = robot.imageUrl
-                ? `<img src="${robot.imageUrl}" alt="${robot.name}" style="width:100%;height:100%;object-fit:cover;">`
-                : categoryEmojis[robot.category] || '🤖';
-
             document.getElementById('rentRobotName').textContent = robot.name;
-            document.getElementById('rentRobotImage').innerHTML = imageHtml;
-            document.getElementById('rentCategory').textContent = robot.category.charAt(0).toUpperCase() + robot.category.slice(1);
+            renderRobotImage(document.getElementById('rentRobotImage'), robot.imageUrl, robot.category, robot.name);
+            document.getElementById('rentCategory').textContent = formatCategory(robot.category);
             document.getElementById('rentDescription').textContent = robot.description;
             document.getElementById('rentPrice').textContent = `$${robot.price}/${robot.priceUnit}`;
             document.getElementById('rentTotal').textContent = `$${robot.price}`;
@@ -913,8 +1084,8 @@
                     contact: card.dataset.contact || null,
                 };
                 document.getElementById('rentRobotName').textContent = currentRobot.name;
-                document.getElementById('rentRobotImage').innerHTML = card.querySelector('.market-card-image')?.innerHTML || '🤖';
-                document.getElementById('rentCategory').textContent = currentRobot.category.charAt(0).toUpperCase() + currentRobot.category.slice(1);
+                renderRobotImage(document.getElementById('rentRobotImage'), currentRobot.imageUrl, currentRobot.category, currentRobot.name);
+                document.getElementById('rentCategory').textContent = formatCategory(currentRobot.category);
                 document.getElementById('rentDescription').textContent = currentRobot.description;
                 document.getElementById('rentPrice').textContent = `$${currentRobot.price}/${currentRobot.priceUnit}`;
                 document.getElementById('rentTotal').textContent = `$${currentRobot.price}`;
@@ -961,16 +1132,22 @@
 
                         // Update success modal with transaction info
                         const contactEl = document.getElementById('operatorContactValue');
-                        contactEl.innerHTML = `
-                            ${currentRobot.contact || 'Contact not provided'}
-                            <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
-                                <a href="https://solscan.io/tx/${result.signature}?cluster=${SOLANA_NETWORK}"
-                                   target="_blank"
-                                   style="color: var(--accent);">
-                                    View transaction on Solscan
-                                </a>
-                            </div>
-                        `;
+                        contactEl.textContent = currentRobot.contact || 'Contact not provided';
+
+                        const linkWrap = document.createElement('div');
+                        linkWrap.style.marginTop = '10px';
+                        linkWrap.style.fontSize = '12px';
+                        linkWrap.style.color = 'var(--text-muted)';
+
+                        const link = document.createElement('a');
+                        link.href = `https://solscan.io/tx/${result.signature}?cluster=${SOLANA_NETWORK}`;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.style.color = 'var(--accent)';
+                        link.textContent = 'View transaction on Solscan';
+
+                        linkWrap.appendChild(link);
+                        contactEl.appendChild(linkWrap);
                     } else {
                         // Demo mode - simulate transaction
                         log.info('[Marketplace]', 'Demo mode: Simulating escrow transaction...');
