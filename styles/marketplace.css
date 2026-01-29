@@ -142,7 +142,7 @@ color: #ef4444;
 background: rgba(239, 68, 68, 0.1);
 }
 .market-card-image {
-height: 100px;
+width: 100%;
 aspect-ratio: 16 / 9;
 background: linear-gradient(135deg, #1e1b4b 0%, #0f0a1e 100%);
 display: flex;
