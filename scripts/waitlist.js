@@ -8,9 +8,63 @@ import { log } from './utils/logger.js';
 export function initWaitlist() {
     const form = document.getElementById('waitlistForm');
     const success = document.getElementById('waitlistSuccess');
-    const confirmModal = document.getElementById('waitlistConfirmModal');
+    let confirmModal = document.getElementById('waitlistConfirmModal');
 
     if (!form || !success) return;
+
+    function ensureConfirmModal() {
+        if (confirmModal) return confirmModal;
+
+        const modal = document.createElement('div');
+        modal.className = 'waitlist-confirm-modal';
+        modal.id = 'waitlistConfirmModal';
+        modal.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'waitlist-confirm-overlay';
+        overlay.setAttribute('data-confirm-close', '');
+
+        const content = document.createElement('div');
+        content.className = 'waitlist-confirm-content';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'waitlist-confirm-close';
+        closeBtn.type = 'button';
+        closeBtn.setAttribute('aria-label', 'Close');
+        closeBtn.setAttribute('data-confirm-close', '');
+        closeBtn.textContent = 'Close';
+
+        const title = document.createElement('h3');
+        title.className = 'waitlist-confirm-title';
+        title.textContent = 'Email confirmed';
+
+        const desc = document.createElement('p');
+        desc.className = 'waitlist-confirm-desc';
+        desc.textContent = 'You are on the waitlist.';
+
+        const cta = document.createElement('button');
+        cta.className = 'waitlist-confirm-btn';
+        cta.type = 'button';
+        cta.setAttribute('data-confirm-close', '');
+        cta.textContent = 'Back to site';
+
+        content.appendChild(closeBtn);
+        content.appendChild(title);
+        content.appendChild(desc);
+        content.appendChild(cta);
+        modal.appendChild(overlay);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        confirmModal = modal;
+        confirmModal.querySelectorAll('[data-confirm-close]').forEach((btn) => {
+            btn.addEventListener('click', () => closeConfirmModal());
+        });
+
+        return confirmModal;
+    }
 
     function closeConfirmModal() {
         if (!confirmModal) return;
@@ -22,6 +76,7 @@ export function initWaitlist() {
     }
 
     function openConfirmModal() {
+        confirmModal = ensureConfirmModal();
         if (!confirmModal) return;
         confirmModal.classList.add('show');
         confirmModal.setAttribute('aria-hidden', 'false');
