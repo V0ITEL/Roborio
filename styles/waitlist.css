@@ -161,6 +161,71 @@ from { opacity: 0; transform: translateY(10px); }
 to { opacity: 1; transform: translateY(0); }
 }
 
+.waitlist-confirm-modal {
+position: fixed;
+inset: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 24px;
+background: rgba(0, 0, 0, 0.6);
+opacity: 0;
+visibility: hidden;
+transition: opacity 0.2s ease, visibility 0.2s ease;
+z-index: 10050;
+}
+.waitlist-confirm-modal.show {
+opacity: 1;
+visibility: visible;
+}
+.waitlist-confirm-overlay {
+position: absolute;
+inset: 0;
+}
+.waitlist-confirm-content {
+position: relative;
+max-width: 420px;
+width: 100%;
+background: var(--bg-card);
+border: 1px solid var(--border-color);
+border-radius: 16px;
+padding: 28px;
+text-align: center;
+box-shadow: var(--shadow-lg);
+}
+.waitlist-confirm-title {
+font-size: 22px;
+margin-bottom: 10px;
+color: var(--text-primary);
+}
+.waitlist-confirm-desc {
+color: var(--text-secondary);
+margin-bottom: 20px;
+}
+.waitlist-confirm-btn,
+.waitlist-confirm-close {
+border: none;
+border-radius: 999px;
+padding: 10px 18px;
+font-size: 13px;
+font-weight: 600;
+cursor: pointer;
+}
+.waitlist-confirm-btn {
+background: var(--accent);
+color: #000;
+}
+.waitlist-confirm-close {
+position: absolute;
+top: 12px;
+right: 12px;
+background: transparent;
+color: var(--text-muted);
+}
+.waitlist-confirm-close:hover {
+color: var(--text-primary);
+}
+
 @media (max-width: 768px) {
   .waitlist-form {
     flex-direction: column;

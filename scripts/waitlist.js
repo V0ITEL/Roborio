@@ -8,17 +8,41 @@ import { log } from './utils/logger.js';
 export function initWaitlist() {
     const form = document.getElementById('waitlistForm');
     const success = document.getElementById('waitlistSuccess');
+    const confirmModal = document.getElementById('waitlistConfirmModal');
 
     if (!form || !success) return;
+
+    function closeConfirmModal() {
+        if (!confirmModal) return;
+        confirmModal.classList.remove('show');
+        confirmModal.setAttribute('aria-hidden', 'true');
+        if (window.location.hash.includes('waitlist?status=')) {
+            history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+    }
+
+    function openConfirmModal() {
+        if (!confirmModal) return;
+        confirmModal.classList.add('show');
+        confirmModal.setAttribute('aria-hidden', 'false');
+        setTimeout(() => closeConfirmModal(), 10000);
+    }
+
+    if (confirmModal) {
+        confirmModal.querySelectorAll('[data-confirm-close]').forEach((btn) => {
+            btn.addEventListener('click', () => closeConfirmModal());
+        });
+    }
 
     const hash = window.location.hash || '';
     const statusMatch = hash.match(/waitlist\\?status=([^&]+)/);
     if (statusMatch && statusMatch[1]) {
         const status = decodeURIComponent(statusMatch[1]);
         if (status === 'confirmed') {
-            success.textContent = 'Email confirmed. You are on the list.';
-            form.style.display = 'none';
-            success.classList.add('show');
+            openConfirmModal();
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeConfirmModal();
+            }, { once: true });
         } else if (status === 'expired') {
             notify.error('Confirmation link expired. Please sign up again.');
         } else if (status === 'invalid') {

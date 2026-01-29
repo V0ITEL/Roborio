@@ -36,19 +36,16 @@ export default async function handler(req, res) {
   }
 
   if (!supabase) {
-    console.error('[Waitlist Confirm] Supabase not configured')
     res.statusCode = 500
     return res.end('Service unavailable')
   }
 
   const token = req.query?.token
   if (!token || typeof token !== 'string') {
-    console.warn('[Waitlist Confirm] Missing token')
     return redirectToStatus(res, 'invalid')
   }
 
   const tokenHash = hashToken(token)
-  console.info('[Waitlist Confirm] Token received', { tokenHashPrefix: tokenHash.slice(0, 8) })
 
   try {
     const { data, error } = await supabase
@@ -58,12 +55,10 @@ export default async function handler(req, res) {
       .maybeSingle()
 
     if (error) {
-      console.error('[Waitlist Confirm] Lookup error', error.code || error.message)
       throw error
     }
 
     if (!data) {
-      console.warn('[Waitlist Confirm] Token not found')
       return redirectToStatus(res, 'invalid')
     }
 
@@ -73,7 +68,6 @@ export default async function handler(req, res) {
 
     const expiresAt = data.confirm_expires_at ? new Date(data.confirm_expires_at).getTime() : 0
     if (!expiresAt || Date.now() > expiresAt) {
-      console.warn('[Waitlist Confirm] Token expired', { expiresAt })
       return redirectToStatus(res, 'expired')
     }
 
@@ -88,13 +82,11 @@ export default async function handler(req, res) {
       .eq('id', data.id)
 
     if (updateError) {
-      console.error('[Waitlist Confirm] Update error', updateError.code || updateError.message)
       throw updateError
     }
 
     return redirectToStatus(res, 'confirmed')
   } catch (err) {
-    console.error('[Waitlist Confirm] Unexpected error', err?.message || err)
     return redirectToStatus(res, 'error')
   }
 }
