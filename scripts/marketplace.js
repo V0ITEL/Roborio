@@ -116,7 +116,8 @@
         // ============ MARKETPLACE UI & LOGIC ============
         // Variables will be set in initMarketplace
         let currentRobot = null;
-        let addRobotBtn, addRobotEmptyBtn, addRobotModal, addRobotForm;
+        let addRobotBtn, addRobotToolbarBtn, addRobotEmptyBtn, addRobotModal, addRobotForm;
+        let gridToggleBtns;
         let rentRobotModal, successModal, robotsGrid, marketplaceEmpty, marketplaceNoResults, marketplaceSentinel;
         let filterBtns, walletModal, walletModalOverlay;
         let searchInput, sortSelect;
@@ -837,6 +838,13 @@
                 openModal(addRobotModal);
             });
 
+            // Add Robot button (toolbar, mobile)
+            addRobotToolbarBtn?.addEventListener('click', () => {
+                if (!requireWalletOrPrompt()) return;
+                resetAddRobotForm();
+                openModal(addRobotModal);
+            });
+
             // Add Robot button (empty state)
             addRobotEmptyBtn?.addEventListener('click', () => {
                 if (!requireWalletOrPrompt()) return;
@@ -888,6 +896,33 @@
                 });
             });
 
+            // Grid layout toggle (2x1 / 1x1)
+            if (gridToggleBtns?.length && robotsGrid) {
+                const setGridLayout = (layout) => {
+                    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+                    if (!isMobile && layout === '1') {
+                        layout = '2';
+                    }
+                    if (isMobile && layout === '4') {
+                        layout = '2';
+                    }
+                    robotsGrid.classList.remove('grid-1', 'grid-2', 'grid-4');
+                    if (layout === '1') robotsGrid.classList.add('grid-1');
+                    if (layout === '2') robotsGrid.classList.add('grid-2');
+                    if (layout === '4') robotsGrid.classList.add('grid-4');
+                    gridToggleBtns.forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.grid === layout);
+                    });
+                };
+
+                gridToggleBtns.forEach(btn => {
+                    btn.addEventListener('click', () => setGridLayout(btn.dataset.grid));
+                });
+
+                const defaultLayout = window.matchMedia('(max-width: 640px)').matches ? '1' : '2';
+                setGridLayout(defaultLayout);
+            }
+
             // ESC to close modals
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
@@ -900,12 +935,14 @@
         export async function initMarketplace() {
             // Get DOM elements now that page is loaded
             addRobotBtn = document.getElementById('addRobotBtn');
+            addRobotToolbarBtn = document.getElementById('addRobotToolbarBtn');
             addRobotEmptyBtn = document.getElementById('addRobotEmptyBtn');
             addRobotModal = document.getElementById('addRobotModal');
             addRobotForm = document.getElementById('addRobotForm');
             rentRobotModal = document.getElementById('rentRobotModal');
             successModal = document.getElementById('successModal');
             robotsGrid = document.getElementById('robotsGrid');
+            gridToggleBtns = document.querySelectorAll('.marketplace-grid-btn');
             marketplaceEmpty = document.getElementById('marketplaceEmpty');
             filterBtns = document.querySelectorAll('.filter-btn');
             marketplaceNoResults = document.getElementById('marketplaceNoResults');

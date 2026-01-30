@@ -58,8 +58,14 @@ export function initRobotForm({
         const uploadPreview = document.getElementById('uploadPreview');
         const previewImg = document.getElementById('previewImg');
         const removeImageBtn = document.getElementById('removeImage');
+        const changeImageBtn = document.getElementById('changeImage');
 
         uploadPlaceholder?.addEventListener('click', () => imageInput.click());
+        uploadPreview?.addEventListener('click', () => imageInput.click());
+        changeImageBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            imageInput.click();
+        });
 
         imageInput?.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -78,7 +84,8 @@ export function initRobotForm({
             }
         });
 
-        removeImageBtn?.addEventListener('click', () => {
+        removeImageBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
             imageInput.value = '';
             previewImg.src = '';
             uploadPlaceholder.hidden = false;

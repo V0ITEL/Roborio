@@ -364,7 +364,10 @@
                     <div class="marketplace-actions">
                         <button class="btn-add-robot" id="addRobotBtn">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                            Add Robot
+                            <span class="btn-add-robot__text">
+                                <span class="btn-add-robot__title">List Robot</span>
+                                <span class="btn-add-robot__meta">Earn in SOL</span>
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -386,10 +389,43 @@
                             <option value="name-asc" data-i18n="marketplaceSortNameAsc">Name: A to Z</option>
                         </select>
                     </div>
-                    <div class="marketplace-view-toggle" role="group" aria-label="Marketplace view">
-                        <button class="marketplace-view-btn active" id="marketplaceViewAll" type="button" data-i18n="marketplaceViewAll">All Robots</button>
-                        <button class="marketplace-view-btn" id="marketplaceViewMine" type="button" data-i18n="marketplaceViewMine">My Robots</button>
+                    <div class="marketplace-controls">
+                        <div class="marketplace-view-toggle" role="group" aria-label="Marketplace view">
+                            <button class="marketplace-view-btn active" id="marketplaceViewAll" type="button" data-i18n="marketplaceViewAll">All Robots</button>
+                            <button class="marketplace-view-btn" id="marketplaceViewMine" type="button" data-i18n="marketplaceViewMine">My Robots</button>
+                        </div>
+                        <div class="marketplace-grid-toggle" role="group" aria-label="Marketplace grid">
+                            <button class="marketplace-grid-btn active" type="button" data-grid="2" aria-label="Grid 2x1">
+                                <svg viewBox="0 0 20 20" aria-hidden="true">
+                                    <rect x="3" y="5" width="6.5" height="10" rx="2"/>
+                                    <rect x="10.5" y="5" width="6.5" height="10" rx="2"/>
+                                </svg>
+                                <span class="grid-label visually-hidden">2x1</span>
+                            </button>
+                            <button class="marketplace-grid-btn" type="button" data-grid="4" aria-label="Grid 4x1">
+                                <svg viewBox="0 0 20 20" aria-hidden="true">
+                                    <rect x="2.5" y="5" width="3.2" height="10" rx="1.4"/>
+                                    <rect x="6.7" y="5" width="3.2" height="10" rx="1.4"/>
+                                    <rect x="10.9" y="5" width="3.2" height="10" rx="1.4"/>
+                                    <rect x="15.1" y="5" width="3.2" height="10" rx="1.4"/>
+                                </svg>
+                                <span class="grid-label visually-hidden">4x1</span>
+                            </button>
+                            <button class="marketplace-grid-btn" type="button" data-grid="1" aria-label="Grid 1x1">
+                                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                    <rect x="3" y="4" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                                <span class="grid-label visually-hidden">1x1</span>
+                            </button>
+                        </div>
                     </div>
+                    <button class="btn-add-robot btn-add-robot--compact marketplace-cta-mobile" id="addRobotToolbarBtn">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <span class="btn-add-robot__text">
+                            <span class="btn-add-robot__title">List Robot</span>
+                            <span class="btn-add-robot__meta">Earn in SOL</span>
+                        </span>
+                    </button>
                 </div>
 
                 <!-- Category Filter -->
@@ -415,7 +451,10 @@
                     <p class="empty-desc">Be the first to list your robot on the marketplace!</p>
                     <button class="btn-add-robot" id="addRobotEmptyBtn">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                        Add Robot
+                        <span class="btn-add-robot__text">
+                            <span class="btn-add-robot__title">List Robot</span>
+                            <span class="btn-add-robot__meta">Earn in SOL</span>
+                        </span>
                     </button>
                 </div>
                 <div class="marketplace-empty marketplace-empty--filtered hidden" id="marketplaceNoResults">
@@ -640,6 +679,7 @@
                             </div>
                             <div class="upload-preview" id="uploadPreview" hidden>
                                 <img id="previewImg" src="" alt="Preview">
+                                <button type="button" class="upload-change" id="changeImage">Change photo</button>
                                 <button type="button" class="upload-remove" id="removeImage">&times;</button>
                             </div>
                         </div>

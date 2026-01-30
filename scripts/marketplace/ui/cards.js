@@ -37,6 +37,13 @@ function getSafeImageUrl(url) {
     return null;
 }
 
+function getRobotStatusBadge(statusValue) {
+    const normalized = typeof statusValue === 'string' ? statusValue.trim().toLowerCase() : '';
+    const label = normalized === 'pilot' ? 'Pilot' : 'Live';
+    const className = normalized === 'pilot' ? 'market-status market-status--pilot' : 'market-status market-status--live';
+    return { label, className };
+}
+
 function renderRobotImage(container, imageUrl, category, name) {
     if (!container) return;
     container.replaceChildren();
@@ -136,6 +143,12 @@ export function createCardRenderer({
         imageDiv.className = 'market-card-image';
         renderRobotImage(imageDiv, robot.imageUrl, robot.category, robot.name);
 
+        const status = getRobotStatusBadge(robot.status);
+        const statusBadge = document.createElement('span');
+        statusBadge.className = status.className;
+        statusBadge.textContent = status.label;
+        imageDiv.appendChild(statusBadge);
+
         const body = document.createElement('div');
         body.className = 'market-card-body';
 
@@ -211,6 +224,12 @@ export function createCardRenderer({
         const imageDiv = document.createElement('div');
         imageDiv.className = 'market-card-image';
         renderRobotImage(imageDiv, null, data.category, data.name);
+
+        const status = getRobotStatusBadge(data.status);
+        const statusBadge = document.createElement('span');
+        statusBadge.className = status.className;
+        statusBadge.textContent = status.label;
+        imageDiv.appendChild(statusBadge);
 
         const body = document.createElement('div');
         body.className = 'market-card-body';
