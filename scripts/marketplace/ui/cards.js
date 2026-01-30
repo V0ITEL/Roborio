@@ -23,8 +23,28 @@ function formatCategory(category) {
 function getSafeImageUrl(url) {
     if (!url || typeof url !== 'string') return null;
     try {
+        const allowedOrigins = new Set([window.location.origin]);
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (supabaseUrl) {
+            try {
+                allowedOrigins.add(new URL(supabaseUrl).origin);
+            } catch (e) {
+                // Ignore invalid supabase URL
+            }
+        }
+
         const parsed = new URL(url, window.location.origin);
         const protocol = parsed.protocol.toLowerCase();
+        const isLocalHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '0.0.0.0';
+        if (protocol === 'http:' && window.location.protocol === 'https:' && parsed.origin !== window.location.origin) {
+            return null;
+        }
+        if (isLocalHost && parsed.origin !== window.location.origin) {
+            return null;
+        }
+        if (!allowedOrigins.has(parsed.origin)) {
+            return null;
+        }
         if (protocol === 'http:' || protocol === 'https:' || protocol === 'blob:') {
             return parsed.toString();
         }
@@ -35,6 +55,20 @@ function getSafeImageUrl(url) {
         return null;
     }
     return null;
+}
+
+function getFallbackImageUrl(category) {
+    if (!category) return null;
+    const map = {
+        delivery: '/images/usecases/delivery.svg',
+        cleaning: '/images/usecases/cleaning.svg',
+        security: '/images/usecases/security.svg',
+        inspection: '/images/usecases/inspection.svg',
+        warehouse: '/images/usecases/warehouse.svg',
+        agriculture: '/images/usecases/agriculture.svg',
+        healthcare: '/images/usecases/healthcare.svg'
+    };
+    return map[category] || null;
 }
 
 function getRobotStatusBadge(statusValue) {
@@ -52,6 +86,15 @@ function renderRobotImage(container, imageUrl, category, name) {
     if (safeUrl) {
         const img = document.createElement('img');
         img.src = safeUrl;
+        img.alt = name || 'Robot image';
+        container.appendChild(img);
+        return;
+    }
+
+    const fallbackUrl = getFallbackImageUrl(category);
+    if (fallbackUrl) {
+        const img = document.createElement('img');
+        img.src = fallbackUrl;
         img.alt = name || 'Robot image';
         container.appendChild(img);
         return;

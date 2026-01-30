@@ -186,15 +186,14 @@
                 return;
             }
 
-            const baseUrl = window.location.origin;
             const imageMap = {
-                delivery: `${baseUrl}/images/usecases/delivery.svg`,
-                cleaning: `${baseUrl}/images/usecases/cleaning.svg`,
-                security: `${baseUrl}/images/usecases/security.svg`,
-                inspection: `${baseUrl}/images/usecases/inspection.svg`,
-                warehouse: `${baseUrl}/images/usecases/warehouse.svg`,
-                agriculture: `${baseUrl}/images/usecases/agriculture.svg`,
-                healthcare: `${baseUrl}/images/usecases/healthcare.svg`
+                delivery: '/images/usecases/delivery.svg',
+                cleaning: '/images/usecases/cleaning.svg',
+                security: '/images/usecases/security.svg',
+                inspection: '/images/usecases/inspection.svg',
+                warehouse: '/images/usecases/warehouse.svg',
+                agriculture: '/images/usecases/agriculture.svg',
+                healthcare: '/images/usecases/healthcare.svg'
             };
 
             const seedRobots = [
