@@ -212,7 +212,7 @@
     <aside class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
         <div class="mobile-menu-header">
             <span class="mobile-menu-title">Menu</span>
-            <button class="mobile-menu-close" id="mobileMenuClose" type="button" aria-label="Close menu">✕</button>
+            <button class="mobile-menu-close" id="mobileMenuClose" type="button" aria-label="Close menu">x</button>
         </div>
         <nav class="mobile-menu-nav">
             <a href="#usecases">Use Cases</a>
@@ -255,14 +255,14 @@
                     </div>
                     <!-- Robot Error State -->
                     <div id="robotError" class="robot-error is-hidden">
-                        <p>⚠️ Failed to load robot model</p>
+                        <p>Warning: Failed to load robot model</p>
                         <button class="btn btn-secondary btn-small" id="retryRobotLoad">Retry</button>
                     </div>
                 </div>
             </div>
             <div class="hero-content">
                 <h1 class="parallax-layer" data-speed="0.05"><span data-i18n="heroTitle">Robot-as-a-Service Marketplace on</span> <span class="highlight" id="solanaText">Solana</span></h1>
-                <p class="hero-description parallax-layer" data-speed="0.03" data-i18n="heroDesc">Roborio is an MVP marketplace demo for robot rentals. Discover verified operators, explore live listings, and reserve a pilot in minutes - no long sales cycles.</p>
+                <p class="hero-description parallax-layer" data-speed="0.03"><span data-i18n="heroDesc">Roborio is an MVP marketplace demo for robot rentals. Discover verified operators, explore live listings, and reserve a pilot in minutes - no long sales cycles.</span></p>
                 <div class="hero-buttons parallax-layer" data-speed="0.02">
                     <a href="#waitlist" class="btn btn-primary btn-glitch btn-shine btn-pulse" id="heroWaitlistCta" data-i18n="joinWaitlist">Join Waitlist</a>
                     <a href="#marketplace" class="btn btn-secondary" data-i18n="viewDemo">View Demo</a>
@@ -284,6 +284,10 @@
             </div>
         </section>
 
+        {{> how-it-works}}
+
+        {{> demo-preview}}
+
          <section class="usecases section" id="usecases" aria-labelledby="usecases-heading">
             <div class="section-header" data-aos="fade-up">
                 <div class="section-tag" data-i18n="useCases">USECASES</div>
@@ -291,13 +295,13 @@
                 <p class="section-desc" data-i18n="useCasesDesc">From last-mile delivery to industrial inspection, Roborio connects you with the right robot for any task. Pay only for what you use.</p>
             </div>
             <div class="usecases-scroll" id="usecasesScroll" role="region" aria-label="Use cases carousel">
-                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🚚</span></div><div class="usecase-body"><h3 data-i18n="lastMileDelivery">Last-Mile Delivery</h3><p data-i18n="lastMileDeliveryDesc">Autonomous robots delivering packages, groceries, and food directly to customers. Pay per-km or per-delivery.</p></div></article>
-                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🧹</span></div><div class="usecase-body"><h3 data-i18n="commercialCleaning">Commercial Cleaning</h3><p data-i18n="commercialCleaningDesc">Industrial floor scrubbers, vacuum robots, and sanitization units for malls, offices, and warehouses.</p></div></article>
-                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🛡️</span></div><div class="usecase-body"><h3 data-i18n="securityPatrol">Security Patrol</h3><p data-i18n="securityPatrolDesc">24/7 autonomous patrol robots with cameras, sensors, and real-time alerts. Perfect for large facilities.</p></div></article>
-                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🔍</span></div><div class="usecase-body"><h3 data-i18n="infrastructureInspection">Infrastructure Inspection</h3><p data-i18n="infrastructureInspectionDesc">Drones and crawlers for inspecting pipelines, power lines, bridges, and buildings. Reduce risk, save costs.</p></div></article>
-                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">📦</span></div><div class="usecase-body"><h3 data-i18n="warehouseAutomation">Warehouse Automation</h3><p data-i18n="warehouseAutomationDesc">Robotic arms and AGVs for picking, packing, and inventory management. Scale up or down instantly.</p></div></article>
-                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🌾</span></div><div class="usecase-body"><h3 data-i18n="agriculturalRobots">Agricultural Robots</h3><p data-i18n="agriculturalRobotsDesc">Autonomous farming robots for planting, monitoring, and harvesting. Perfect for seasonal demands.</p></div></article>
-                <article class="usecase-card"><div class="usecase-image"><span class="icon" aria-hidden="true">🏥</span></div><div class="usecase-body"><h3 data-i18n="healthcareAssistants">Healthcare Assistants</h3><p data-i18n="healthcareAssistantsDesc">Medical delivery robots and patient assistance units for hospitals and care facilities.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image has-image"><img src="/images/usecases/delivery.svg" alt="" loading="lazy"><span class="visually-hidden">Delivery</span></div><div class="usecase-body"><h3 data-i18n="lastMileDelivery">Last-Mile Delivery</h3><p data-i18n="lastMileDeliveryDesc">Autonomous robots delivering packages, groceries, and food directly to customers. Pay per-km or per-delivery.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image has-image"><img src="/images/usecases/cleaning.svg" alt="" loading="lazy"><span class="visually-hidden">Cleaning</span></div><div class="usecase-body"><h3 data-i18n="commercialCleaning">Commercial Cleaning</h3><p data-i18n="commercialCleaningDesc">Industrial floor scrubbers, vacuum robots, and sanitization units for malls, offices, and warehouses.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image has-image"><img src="/images/usecases/security.svg" alt="" loading="lazy"><span class="visually-hidden">Security</span></div><div class="usecase-body"><h3 data-i18n="securityPatrol">Security Patrol</h3><p data-i18n="securityPatrolDesc">24/7 autonomous patrol robots with cameras, sensors, and real-time alerts. Perfect for large facilities.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image has-image"><img class="usecase-image--inspection-img" src="/images/usecases/inspection.svg" alt="" loading="lazy"><span class="visually-hidden">Inspection</span></div><div class="usecase-body"><h3 data-i18n="infrastructureInspection">Infrastructure Inspection</h3><p data-i18n="infrastructureInspectionDesc">Drones and crawlers for inspecting pipelines, power lines, bridges, and buildings. Reduce risk, save costs.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image has-image"><img src="/images/usecases/warehouse.svg" alt="" loading="lazy"><span class="visually-hidden">Warehouse</span></div><div class="usecase-body"><h3 data-i18n="warehouseAutomation">Warehouse Automation</h3><p data-i18n="warehouseAutomationDesc">Robotic arms and AGVs for picking, packing, and inventory management. Scale up or down instantly.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image has-image"><img src="/images/usecases/agriculture.svg" alt="" loading="lazy"><span class="visually-hidden">Agriculture</span></div><div class="usecase-body"><h3 data-i18n="agriculturalRobots">Agricultural Robots</h3><p data-i18n="agriculturalRobotsDesc">Autonomous farming robots for planting, monitoring, and harvesting. Perfect for seasonal demands.</p></div></article>
+                <article class="usecase-card"><div class="usecase-image has-image"><img src="/images/usecases/healthcare.svg" alt="" loading="lazy"><span class="visually-hidden">Healthcare</span></div><div class="usecase-body"><h3 data-i18n="healthcareAssistants">Healthcare Assistants</h3><p data-i18n="healthcareAssistantsDesc">Medical delivery robots and patient assistance units for hospitals and care facilities.</p></div></article>
             </div>
         </section>
 
@@ -406,7 +410,7 @@
 
                                 <!-- Empty State -->
                 <div class="marketplace-empty" id="marketplaceEmpty">
-                    <div class="empty-icon">🤖</div>
+                    <div class="empty-icon">RB</div>
                     <h3 class="empty-title">No robots listed yet</h3>
                     <p class="empty-desc">Be the first to list your robot on the marketplace!</p>
                     <button class="btn-add-robot" id="addRobotEmptyBtn">
@@ -456,7 +460,7 @@
     <div class="modal wallet-modal" id="walletModal" role="dialog" aria-modal="true" aria-labelledby="walletModalTitle" aria-hidden="true">
         <div class="modal-header">
             <h3 class="modal-title" id="walletModalTitle" data-i18n="selectWallet">Select Wallet</h3>
-            <button class="modal-close" id="walletModalClose" aria-label="Close">✕</button>
+            <button class="modal-close" id="walletModalClose" aria-label="Close">x</button>
         </div>
         <div class="modal-body">
             <div class="wallet-list">
@@ -487,7 +491,7 @@
         </div>
         <div class="wallet-dropdown-balance">
             <span class="wallet-dropdown-sol" id="walletBalance">0.00 SOL</span>
-            <span class="wallet-dropdown-usd" id="walletBalanceUsd">≈ $0.00</span>
+            <span class="wallet-dropdown-usd" id="walletBalanceUsd">~ $0.00</span>
         </div>
         <div class="wallet-dropdown-actions">
             <button class="wallet-dropdown-btn buy-btn" id="openBuyModal" data-i18n="buyRoborio">Buy $ROBORIO</button>
@@ -500,13 +504,13 @@
     <div class="modal buy-modal" id="buyModal" role="dialog" aria-modal="true" aria-labelledby="buyModalTitle" aria-hidden="true">
         <div class="modal-header">
             <h3 class="modal-title" id="buyModalTitle" data-i18n="buyRoborioTitle">Buy $ROBORIO</h3>
-            <button class="modal-close" id="buyModalClose" aria-label="Close">✕</button>
+            <button class="modal-close" id="buyModalClose" aria-label="Close">x</button>
         </div>
         <div class="modal-body">
             <div class="buy-container">
                 <!-- Token not launched message -->
                 <div class="buy-placeholder" id="buyPlaceholder">
-                    <div class="buy-placeholder-icon">🚀</div>
+                    <div class="buy-placeholder-icon">SOON</div>
                     <h4 data-i18n="tokenNotLaunched">Token Not Yet Launched</h4>
                     <p data-i18n="tokenNotLaunchedDesc">$ROBORIO token will be available for purchase soon. Join our waitlist to be notified when we launch!</p>
                     <a href="#waitlist" class="btn btn-primary" id="buyWaitlistBtn" data-i18n="joinWaitlist">Join Waitlist</a>
@@ -516,7 +520,7 @@
                 <div id="jupiterPreview" class="jupiter-preview is-hidden">
                     <div class="jupiter-terminal">
                         <div class="jupiter-header">
-                            <span class="jupiter-logo">⚡</span>
+                            <span class="jupiter-logo">JUP</span>
                             <span>Jupiter</span>
                             <span class="jupiter-badge">Powered by Jupiter</span>
                         </div>
@@ -548,11 +552,11 @@
                             <div class="jupiter-input-row">
                                 <input type="number" class="jupiter-input" placeholder="0.00" id="jupiterToAmount" readonly aria-label="Amount to receive" autocomplete="off">
                                 <button class="jupiter-token-select jupiter-token-roborio">
-                                    <div class="jupiter-roborio-icon">🤖</div>
+                                    <div class="jupiter-roborio-icon">RB</div>
                                     <span>$ROBORIO</span>
                                 </button>
                             </div>
-                            <div class="jupiter-rate">1 SOL ≈ <span id="jupiterRate">~</span> ROBORIO</div>
+                            <div class="jupiter-rate">1 SOL ~ <span id="jupiterRate">--</span> ROBORIO</div>
                         </div>
                         
                         <div class="jupiter-details">
@@ -575,7 +579,7 @@
                         </button>
                         
                         <div class="jupiter-footer">
-                            <span>🔒 Secure swap via Jupiter Aggregator</span>
+                            <span>Secure swap via Jupiter Aggregator</span>
                         </div>
                     </div>
                 </div>
@@ -744,7 +748,7 @@
                         <label class="payment-option" for="paymentSOL">
                             <input type="radio" name="paymentMethod" id="paymentSOL" value="SOL" checked autocomplete="off">
                             <span class="payment-option-content">
-                                <span class="payment-icon">◎</span>
+                                <span class="payment-icon">SOL</span>
                                 <span class="payment-name">SOL</span>
                             </span>
                         </label>

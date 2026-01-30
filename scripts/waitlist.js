@@ -9,67 +9,101 @@ export function initWaitlist() {
     const form = document.getElementById('waitlistForm');
     const success = document.getElementById('waitlistSuccess');
     let confirmModal = document.getElementById('waitlistConfirmModal');
+    let confirmOverlay = document.getElementById('waitlistConfirmOverlay');
 
     if (!form || !success) return;
 
     function ensureConfirmModal() {
-        if (confirmModal) return confirmModal;
+        if (confirmModal && confirmOverlay) {
+            if (confirmOverlay.parentNode !== document.body) document.body.appendChild(confirmOverlay);
+            if (confirmModal.parentNode !== document.body) document.body.appendChild(confirmModal);
+            return confirmModal;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.id = 'waitlistConfirmOverlay';
+        overlay.setAttribute('aria-hidden', 'true');
 
         const modal = document.createElement('div');
-        modal.className = 'waitlist-confirm-modal';
+        modal.className = 'modal';
         modal.id = 'waitlistConfirmModal';
         modal.setAttribute('aria-hidden', 'true');
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-modal', 'true');
 
-        const overlay = document.createElement('div');
-        overlay.className = 'waitlist-confirm-overlay';
-        overlay.setAttribute('data-confirm-close', '');
+        const header = document.createElement('div');
+        header.className = 'modal-header';
 
-        const content = document.createElement('div');
-        content.className = 'waitlist-confirm-content';
+        const title = document.createElement('h3');
+        title.className = 'modal-title';
+        title.textContent = 'Email confirmed';
 
         const closeBtn = document.createElement('button');
-        closeBtn.className = 'waitlist-confirm-close';
+        closeBtn.className = 'modal-close';
         closeBtn.type = 'button';
         closeBtn.setAttribute('aria-label', 'Close');
         closeBtn.setAttribute('data-confirm-close', '');
-        closeBtn.textContent = 'Close';
+        closeBtn.textContent = 'x';
 
-        const title = document.createElement('h3');
-        title.className = 'waitlist-confirm-title';
-        title.textContent = 'Email confirmed';
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        const body = document.createElement('div');
+        body.className = 'modal-body';
+
+        const hero = document.createElement('div');
+        hero.className = 'waitlist-confirm-hero';
+
+        const icon = document.createElement('div');
+        icon.className = 'waitlist-confirm-icon';
+        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
 
         const desc = document.createElement('p');
         desc.className = 'waitlist-confirm-desc';
         desc.textContent = 'You are on the waitlist.';
 
         const cta = document.createElement('button');
-        cta.className = 'waitlist-confirm-btn';
+        cta.className = 'btn btn-primary btn-full';
         cta.type = 'button';
         cta.setAttribute('data-confirm-close', '');
         cta.textContent = 'Back to site';
 
-        content.appendChild(closeBtn);
-        content.appendChild(title);
-        content.appendChild(desc);
-        content.appendChild(cta);
-        modal.appendChild(overlay);
-        modal.appendChild(content);
+        hero.appendChild(icon);
+        hero.appendChild(desc);
+        body.appendChild(hero);
+        body.appendChild(cta);
+
+        modal.appendChild(header);
+        modal.appendChild(body);
+
+        document.body.appendChild(overlay);
         document.body.appendChild(modal);
 
         confirmModal = modal;
-        confirmModal.querySelectorAll('[data-confirm-close]').forEach((btn) => {
-            btn.addEventListener('click', () => closeConfirmModal());
+        confirmOverlay = overlay;
+
+        [confirmOverlay, confirmModal].forEach((el) => {
+            el.querySelectorAll('[data-confirm-close]').forEach((btn) => {
+                btn.addEventListener('click', () => closeConfirmModal());
+            });
         });
+
+        confirmOverlay.addEventListener('click', () => closeConfirmModal());
 
         return confirmModal;
     }
 
     function closeConfirmModal() {
-        if (!confirmModal) return;
-        confirmModal.classList.remove('show');
-        confirmModal.setAttribute('aria-hidden', 'true');
+        if (confirmModal) {
+            confirmModal.classList.remove('active');
+            confirmModal.setAttribute('aria-hidden', 'true');
+        }
+        if (confirmOverlay) {
+            confirmOverlay.classList.remove('active');
+            confirmOverlay.setAttribute('aria-hidden', 'true');
+        }
+        document.body.classList.remove('waitlist-confirm-open');
         if (window.location.hash.includes('waitlist?status=')) {
             history.replaceState(null, document.title, window.location.pathname + window.location.search);
         }
@@ -78,8 +112,13 @@ export function initWaitlist() {
     function openConfirmModal() {
         confirmModal = ensureConfirmModal();
         if (!confirmModal) return;
-        confirmModal.classList.add('show');
+        confirmModal.classList.add('active');
         confirmModal.setAttribute('aria-hidden', 'false');
+        if (confirmOverlay) {
+            confirmOverlay.classList.add('active');
+            confirmOverlay.setAttribute('aria-hidden', 'false');
+        }
+        document.body.classList.add('waitlist-confirm-open');
         setTimeout(() => closeConfirmModal(), 10000);
     }
 
@@ -120,7 +159,9 @@ export function initWaitlist() {
 
         const emailInput = form.querySelector('input[type="email"]');
         const submitBtn = form.querySelector('button[type="submit"]');
+        const segmentInput = form.querySelector('input[name="waitlistSegment"]:checked');
         const email = emailInput.value.trim();
+        const segment = segmentInput ? segmentInput.value : 'business';
 
         
         if (!email) {
@@ -155,7 +196,7 @@ export function initWaitlist() {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email: sanitizedEmail }),
+                    body: JSON.stringify({ email: sanitizedEmail, segment }),
                 });
 
                 log.info('[Waitlist]', 'Signup successful:', sanitizedEmail);

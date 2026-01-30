@@ -30,7 +30,7 @@ function createToast(message, type = 'info') {
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'toast-close';
-    closeBtn.textContent = '×';
+    closeBtn.textContent = 'x';
     closeBtn.setAttribute('aria-label', 'Close');
     closeBtn.onclick = () => removeToast(toast);
 

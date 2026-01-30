@@ -1,0 +1,54 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="whGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f14"/>
+      <stop offset="55%" stop-color="#0f131a"/>
+      <stop offset="100%" stop-color="#0b0f14"/>
+    </linearGradient>
+    <radialGradient id="whGlow" cx="60%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="whGlow2" cx="30%" cy="70%" r="55%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#whGrad)"/>
+  <rect width="1600" height="900" fill="url(#whGlow)"/>
+  <rect width="1600" height="900" fill="url(#whGlow2)"/>
+
+  <g opacity="0.06">
+    <line x1="200" y1="0" x2="200" y2="900" stroke="#22d3ee"/>
+    <line x1="800" y1="0" x2="800" y2="900" stroke="#22d3ee"/>
+    <line x1="1400" y1="0" x2="1400" y2="900" stroke="#22d3ee"/>
+    <line x1="0" y1="620" x2="1600" y2="620" stroke="#22d3ee"/>
+    <line x1="0" y1="760" x2="1600" y2="760" stroke="#22d3ee"/>
+  </g>
+
+  <path d="M 120 730 L 400 690 L 700 710 L 980 680 L 1280 700 L 1560 670" stroke="#3b82f6" stroke-width="1" opacity="0.25" fill="none" stroke-dasharray="16 22"/>
+  <path d="M 80 760 L 360 720 L 660 740 L 960 710 L 1260 730 L 1540 700" stroke="#22d3ee" stroke-width="1" opacity="0.2" fill="none" stroke-dasharray="10 18"/>
+
+  <!-- Warehouse bot: AGV + rack icon -->
+  <g transform="translate(800, 320) scale(2.1)">
+    <!-- Halo rings -->
+    <circle cx="0" cy="0" r="130" fill="#3b82f6" opacity="0.04"/>
+    <circle cx="0" cy="0" r="90" fill="#3b82f6" opacity="0.06"/>
+
+    <!-- Rack frame -->
+    <rect x="-110" y="-40" width="220" height="120" rx="6" fill="#0f131a" stroke="#3b82f6" stroke-width="2" opacity="0.8"/>
+    <line x1="-110" y1="0" x2="110" y2="0" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/>
+    <line x1="-110" y1="40" x2="110" y2="40" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/>
+    <line x1="-40" y1="-40" x2="-40" y2="80" stroke="#22d3ee" stroke-width="1.2" opacity="0.35"/>
+    <line x1="40" y1="-40" x2="40" y2="80" stroke="#22d3ee" stroke-width="1.2" opacity="0.35"/>
+
+    <!-- AGV body -->
+    <rect x="-70" y="90" width="140" height="50" rx="8" fill="#0b0f14" stroke="#3b82f6" stroke-width="2" opacity="0.9"/>
+    <rect x="-45" y="100" width="90" height="26" rx="4" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="-45" cy="140" r="10" fill="none" stroke="#10b981" stroke-width="2" opacity="0.6"/>
+    <circle cx="45" cy="140" r="10" fill="none" stroke="#10b981" stroke-width="2" opacity="0.6"/>
+
+    <!-- Sensor -->
+    <circle cx="0" cy="115" r="9" fill="#10b981" opacity="0.5"/>
+  </g>
+</svg>

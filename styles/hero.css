@@ -87,8 +87,9 @@ max-width: 900px;
 font-size: clamp(36px, 7vw, 72px);
 font-weight: 700;
 line-height: 1.1;
-letter-spacing: -0.03em;
+letter-spacing: -0.02em;
 margin-bottom: 24px;
+text-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 18px rgba(16, 185, 129, 0.18);
 }
 .hero h1 .highlight {
 background: linear-gradient(135deg, var(--accent) 0%, #34d399 50%, #3b82f6 100%);
@@ -137,12 +138,25 @@ transform: scale(1);
 }
 .hero-description {
 font-size: 17px;
-color: #ffffff;
+color: rgba(255, 255, 255, 0.95);
 max-width: 600px;
 margin: 0 auto 40px;
 line-height: 1.7;
-text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.3);
+text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 font-weight: 400;
+display: inline-block;
+padding: 0;
+border-radius: 0;
+background: transparent;
+backdrop-filter: none;
+}
+.hero-description > span {
+display: inline;
+padding: 3px 7px;
+border-radius: 999px;
+background: rgba(7, 9, 9, 0.42);
+box-decoration-break: clone;
+-webkit-box-decoration-break: clone;
 }
 .hero-buttons {
 display: flex;
@@ -154,6 +168,15 @@ margin-bottom: 60px;
 .hero-buttons .btn {
 padding: 14px 28px;
 font-size: 13px;
+}
+.hero-buttons .btn-secondary {
+background: rgba(10, 12, 12, 0.65);
+border-color: rgba(255, 255, 255, 0.25);
+box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.hero-buttons .btn-secondary:hover {
+background: rgba(16, 18, 18, 0.85);
+border-color: rgba(255, 255, 255, 0.4);
 }
 .hero-stats {
 display: flex;
@@ -178,6 +201,7 @@ font-weight: 700;
 font-family: var(--font-mono);
 color: var(--text-primary);
 margin-bottom: 4px;
+text-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
 }
 .hero-stat-value .accent {
 color: var(--accent);
@@ -187,6 +211,15 @@ font-size: 12px;
 color: var(--text-muted);
 text-transform: uppercase;
 letter-spacing: 0.1em;
+text-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+display: inline-flex;
+align-items: center;
+justify-content: center;
+padding: 6px 10px;
+border-radius: 999px;
+background: rgba(8, 10, 10, 0.7);
+border: 1px solid rgba(255, 255, 255, 0.08);
+backdrop-filter: blur(6px);
 }
 
 @media (max-width: 1024px) {

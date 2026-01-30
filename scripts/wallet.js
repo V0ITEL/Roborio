@@ -483,7 +483,7 @@ export function initWallet() {
         if (balanceUsdEl) {
             
             const usdValue = walletState.balance * 180;
-            balanceUsdEl.textContent = '≈ $' + usdValue.toFixed(2);
+            balanceUsdEl.textContent = '~ $' + usdValue.toFixed(2);
         }
     }
 

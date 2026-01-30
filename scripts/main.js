@@ -341,7 +341,7 @@ async function loadExternalScripts() {
 
         const closeBtn = document.createElement('button');
         closeBtn.className = 'toast-close';
-        closeBtn.textContent = '×';
+        closeBtn.textContent = 'x';
         closeBtn.setAttribute('aria-label', 'Close notification');
         closeBtn.onclick = () => toast.remove();
 
@@ -990,6 +990,76 @@ async function loadExternalScripts() {
         log.debug('[Navbar]', 'Sticky navbar with scroll effect initialized');
     }
 
+    // ============ Demo Preview Video ============
+    function initDemoPreviewVideo() {
+        const media = document.querySelector('.demo-preview-media');
+        if (!media) return;
+
+        const video = media.querySelector('.demo-preview-video');
+        const playBtn = media.querySelector('.demo-preview-play');
+        const webmSource = media.querySelector('source[data-role="webm"]');
+        const mp4Source = media.querySelector('source[data-role="mp4"]');
+
+        const mp4 = media.dataset.videoMp4 || '';
+        const webm = media.dataset.videoWebm || '';
+        const poster = media.dataset.poster || '';
+        const durationText = media.dataset.duration || '';
+
+        if (poster && video) {
+            video.setAttribute('poster', poster);
+        }
+
+        if (webm && webmSource) {
+            webmSource.src = webm;
+        }
+
+        if (mp4 && mp4Source) {
+            mp4Source.src = mp4;
+        }
+
+        if ((mp4 || webm) && video) {
+            video.load();
+        }
+
+        const hideOverlay = () => {
+            media.classList.remove('is-placeholder');
+        };
+
+        const durationLabel = media.querySelector('.demo-preview-duration-text');
+        const setDurationLabel = (text) => {
+            if (!durationLabel || !text) return;
+            durationLabel.textContent = text;
+        };
+
+        if (durationText) {
+            setDurationLabel(durationText);
+        }
+
+        if (video) {
+            video.addEventListener('loadedmetadata', () => {
+                if (durationText) return;
+                if (!isFinite(video.duration) || video.duration <= 0) return;
+                const totalSeconds = Math.round(video.duration);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                const formatted = minutes > 0
+                    ? `${minutes}m ${String(seconds).padStart(2, '0')}s demo`
+                    : `${seconds}s demo`;
+                setDurationLabel(formatted);
+            }, { once: true });
+
+            video.addEventListener('play', hideOverlay);
+        }
+
+        if (playBtn && video) {
+            playBtn.addEventListener('click', () => {
+                if (!mp4 && !webm) return;
+                hideOverlay();
+                video.play().catch(() => {});
+            });
+        }
+    }
+
     // ============ Initialize All ============
     async function init() {
         injectStructuredData();
@@ -1016,6 +1086,7 @@ async function loadExternalScripts() {
         initScrollIndicator();
         initBackToTop();
         initCookieBanner();
+        initDemoPreviewVideo();
     }
 
     // Run on DOM ready

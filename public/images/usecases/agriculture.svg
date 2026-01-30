@@ -1,0 +1,52 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="agGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f14"/>
+      <stop offset="55%" stop-color="#0f131a"/>
+      <stop offset="100%" stop-color="#0b0f14"/>
+    </linearGradient>
+    <radialGradient id="agGlow" cx="55%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="agGlow2" cx="30%" cy="70%" r="55%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#agGrad)"/>
+  <rect width="1600" height="900" fill="url(#agGlow)"/>
+  <rect width="1600" height="900" fill="url(#agGlow2)"/>
+
+  <!-- Field lines -->
+  <path d="M -50 680 Q 250 620 520 650 T 1100 620 T 1650 660" stroke="#10b981" stroke-width="1.5" opacity="0.18" fill="none"/>
+  <path d="M -30 720 Q 260 660 520 690 T 1100 670 T 1650 700" stroke="#22d3ee" stroke-width="1" opacity="0.14" fill="none"/>
+  <path d="M 0 760 Q 300 700 560 730 T 1150 710 T 1700 740" stroke="#3b82f6" stroke-width="1" opacity="0.12" fill="none"/>
+
+  <!-- Agriculture bot: drone + sprayer -->
+  <g transform="translate(800, 320) scale(2.0)">
+    <circle cx="0" cy="0" r="140" fill="#10b981" opacity="0.04"/>
+    <circle cx="0" cy="0" r="95" fill="#10b981" opacity="0.06"/>
+
+    <!-- Drone body -->
+    <polygon points="0,-40 60,0 0,40 -60,0" fill="#0f131a" stroke="#22d3ee" stroke-width="2" opacity="0.85"/>
+    <circle cx="0" cy="0" r="16" fill="#10b981" opacity="0.6"/>
+
+    <!-- Arms -->
+    <line x1="-90" y1="-10" x2="-140" y2="-40" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+    <line x1="90" y1="-10" x2="140" y2="-40" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+    <line x1="-90" y1="10" x2="-140" y2="40" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+    <line x1="90" y1="10" x2="140" y2="40" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+
+    <!-- Rotors -->
+    <circle cx="-140" cy="-40" r="24" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="140" cy="-40" r="24" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="-140" cy="40" r="24" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="140" cy="40" r="24" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+
+    <!-- Sprayer lines -->
+    <line x1="-30" y1="55" x2="-55" y2="90" stroke="#22d3ee" stroke-width="1.2" opacity="0.5"/>
+    <line x1="0" y1="60" x2="0" y2="100" stroke="#22d3ee" stroke-width="1.2" opacity="0.5"/>
+    <line x1="30" y1="55" x2="55" y2="90" stroke="#22d3ee" stroke-width="1.2" opacity="0.5"/>
+  </g>
+</svg>

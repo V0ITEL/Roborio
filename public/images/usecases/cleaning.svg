@@ -1,0 +1,129 @@
+<svg
+      width="1600"
+      height="900"
+      viewBox="0 0 1600 900"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+     
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <defs>
+        <linearGradient id="cleaningGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#0f131a" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#0b0f14" stop-opacity="1"/>
+        </linearGradient>
+        <radialGradient id="cleaningGlow1" cx="50%" cy="70%">
+          <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="cleaningGlow2" cx="80%" cy="50%">
+          <stop offset="0%" stop-color="#10b981" stop-opacity="0.08"/>
+          <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      
+      <rect width="1600" height="900" fill="url(#cleaningGrad1)"/>
+      <rect width="1600" height="900" fill="url(#cleaningGlow1)"/>
+      <rect width="1600" height="900" fill="url(#cleaningGlow2)"/>
+      
+      <path
+        d="M -100 650 Q 400 630 800 650 T 1700 650"
+        stroke="#22d3ee"
+        stroke-width="2"
+        fill="none"
+        opacity="0.25"/>
+      <path
+        d="M -100 680 Q 400 665 800 680 T 1700 680"
+        stroke="#22d3ee"
+        stroke-width="1.5"
+        fill="none"
+        opacity="0.18"/>
+      <path
+        d="M -100 710 Q 400 695 800 710 T 1700 710"
+        stroke="#3b82f6"
+        stroke-width="1.5"
+        fill="none"
+        opacity="0.15"/>
+      <path
+        d="M -100 740 Q 400 728 800 740 T 1700 740"
+        stroke="#10b981"
+        stroke-width="1"
+        fill="none"
+        opacity="0.12"/>
+      
+      <path
+        d="M 300 500 Q 310 650 300 800"
+        stroke="#22d3ee"
+        stroke-width="1"
+        fill="none"
+        opacity="0.1"/>
+      <path
+        d="M 700 550 Q 690 680 700 850"
+        stroke="#22d3ee"
+        stroke-width="1"
+        fill="none"
+        opacity="0.08"/>
+      <path
+        d="M 1100 520 Q 1110 670 1100 820"
+        stroke="#3b82f6"
+        stroke-width="1"
+        fill="none"
+        opacity="0.1"/>
+      
+      <ellipse cx="800" cy="700" rx="300" ry="120" fill="#22d3ee" opacity="0.03"/>
+      <ellipse cx="1200" cy="650" rx="200" ry="80" fill="#10b981" opacity="0.025"/>
+      
+      <g opacity="0.06">
+        <line x1="0" y1="620" x2="1600" y2="620" stroke="#22d3ee" stroke-width="0.5"/>
+        <line x1="0" y1="690" x2="1600" y2="690" stroke="#22d3ee" stroke-width="0.5"/>
+        <line x1="0" y1="760" x2="1600" y2="760" stroke="#22d3ee" stroke-width="0.5"/>
+      </g>
+      
+      <circle cx="500" cy="680" r="2" fill="#22d3ee" opacity="0.3"/>
+      <circle cx="900" cy="710" r="2" fill="#10b981" opacity="0.25"/>
+      <circle cx="1300" cy="670" r="2" fill="#3b82f6" opacity="0.28"/>
+      
+      
+      <g transform="translate(800, 300) scale(2.5)">
+        
+        <circle cx="0" cy="0" r="80" fill="#0f131a" stroke="#22d3ee" stroke-width="2.5" opacity="0.85"/>
+        <circle cx="0" cy="0" r="70" fill="#22d3ee" opacity="0.1"/>
+        
+        
+        <circle cx="0" cy="0" r="35" fill="#0b0f14" stroke="#10b981" stroke-width="2" opacity="0.85"/>
+        <circle cx="0" cy="0" r="25" fill="#10b981" opacity="0.25"/>
+        <circle cx="0" cy="0" r="15" fill="#10b981" opacity="0.4"/>
+        
+        
+        <path d="M -60 50 Q -60 80 -40 95 Q -20 85 0 95 Q 20 85 40 95 Q 60 80 60 50" 
+              stroke="#22d3ee" stroke-width="2.5" fill="none" opacity="0.6"/>
+        <path d="M -50 60 Q -50 75 -35 85 Q -20 80 0 85 Q 20 80 35 85 Q 50 75 50 60" 
+              stroke="#22d3ee" stroke-width="1.5" fill="none" opacity="0.4"/>
+        
+        
+        <line x1="-55" y1="70" x2="-65" y2="90" stroke="#10b981" stroke-width="1.5" opacity="0.35"/>
+        <line x1="-30" y1="75" x2="-35" y2="95" stroke="#10b981" stroke-width="1.5" opacity="0.35"/>
+        <line x1="0" y1="78" x2="0" y2="98" stroke="#10b981" stroke-width="1.5" opacity="0.35"/>
+        <line x1="30" y1="75" x2="35" y2="95" stroke="#10b981" stroke-width="1.5" opacity="0.35"/>
+        <line x1="55" y1="70" x2="65" y2="90" stroke="#10b981" stroke-width="1.5" opacity="0.35"/>
+        
+        
+        <circle cx="-65" cy="-20" r="10" fill="#3b82f6" opacity="0.5"/>
+        <circle cx="65" cy="-20" r="10" fill="#3b82f6" opacity="0.5"/>
+        <circle cx="-65" cy="20" r="10" fill="#3b82f6" opacity="0.5"/>
+        <circle cx="65" cy="20" r="10" fill="#3b82f6" opacity="0.5"/>
+        
+        
+        <path d="M -100 110 Q -50 100 0 110 T 100 110" stroke="#10b981" stroke-width="1.5" fill="none" opacity="0.45"/>
+        <path d="M -90 125 Q -45 118 0 125 T 90 125" stroke="#10b981" stroke-width="1.5" fill="none" opacity="0.3"/>
+        
+        
+        <circle cx="-40" cy="100" r="3" fill="#22d3ee" opacity="0.6"/>
+        <circle cx="45" cy="105" r="2.5" fill="#22d3ee" opacity="0.5"/>
+        <circle cx="0" cy="112" r="2" fill="#10b981" opacity="0.6"/>
+        
+        
+        <circle cx="0" cy="0" r="130" fill="#22d3ee" opacity="0.04"/>
+        <circle cx="0" cy="0" r="90" fill="#22d3ee" opacity="0.05"/>
+      </g>
+    </svg>

@@ -777,8 +777,11 @@ border-color: var(--accent);
 background: rgba(16, 185, 129, 0.1);
 }
 .payment-icon {
-font-size: 20px;
+font-size: 12px;
 font-weight: 700;
+font-family: var(--font-mono);
+letter-spacing: 0.1em;
+text-transform: uppercase;
 }
 .payment-name {
 font-size: 14px;
@@ -948,7 +951,11 @@ background: var(--bg-hover);
 border-color: var(--accent);
 }
 .empty-icon {
-font-size: 64px;
+font-size: 48px;
+font-family: var(--font-mono);
+font-weight: 600;
+letter-spacing: 0.2em;
+text-transform: uppercase;
 margin-bottom: 24px;
 opacity: 0.5;
 }

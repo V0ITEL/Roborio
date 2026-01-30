@@ -6,8 +6,22 @@
         </div>
         <h2 id="waitlist-heading" class="waitlist-title"><span data-i18n="waitlistTitle">Get</span> <span data-i18n="waitlistAccess">MVP Access</span> to Roborio</h2>
         <p class="waitlist-desc" data-i18n="waitlistDesc">
-           Reverse a pilot slot, receive a guided demo, and get priority onboarding as we scale the marketplace.
+           Reserve a pilot slot, receive a guided demo, and get priority onboarding as we scale the marketplace.
         </p>
+        <div class="waitlist-segment">
+            <span class="waitlist-segment-label" data-i18n="waitlistSegmentLabel">I am a</span>
+            <div class="waitlist-segment-options" role="radiogroup" aria-label="Waitlist segment">
+                <label class="waitlist-segment-option">
+                    <input type="radio" name="waitlistSegment" value="business" checked>
+                    <span class="waitlist-segment-pill" data-i18n="waitlistSegmentBusiness">Business</span>
+                </label>
+                <label class="waitlist-segment-option">
+                    <input type="radio" name="waitlistSegment" value="operator">
+                    <span class="waitlist-segment-pill" data-i18n="waitlistSegmentOperator">Operator</span>
+                </label>
+            </div>
+            <p class="waitlist-segment-note" data-i18n="waitlistSegmentNote">Helps us tailor onboarding.</p>
+        </div>
         <form class="waitlist-form" id="waitlistForm">
             <label for="waitlistEmail" class="visually-hidden">Email address</label>
             <input type="email" id="waitlistEmail" class="waitlist-input" data-i18n="waitlistPlaceholder" placeholder="Enter your email" required aria-label="Email address for waitlist" autocomplete="email">
@@ -20,13 +34,22 @@
         <div class="waitlist-success" id="waitlistSuccess" data-i18n="waitlistSuccess">
             You're on the list! We'll notify you when we launch.
         </div>
-        <div class="waitlist-confirm-modal" id="waitlistConfirmModal" aria-hidden="true" role="dialog" aria-modal="true">
-            <div class="waitlist-confirm-overlay" data-confirm-close></div>
-            <div class="waitlist-confirm-content">
-                <button class="waitlist-confirm-close" type="button" aria-label="Close" data-confirm-close>Close</button>
-                <h3 class="waitlist-confirm-title" data-i18n="waitlistConfirmTitle">Email confirmed</h3>
-                <p class="waitlist-confirm-desc" data-i18n="waitlistConfirmDesc">You are on the waitlist.</p>
-                <button class="waitlist-confirm-btn" type="button" data-confirm-close data-i18n="waitlistConfirmCta">Back to site</button>
+        <div class="modal-overlay" id="waitlistConfirmOverlay" aria-hidden="true"></div>
+        <div class="modal" id="waitlistConfirmModal" aria-hidden="true" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="waitlistConfirmTitle">Email confirmed</h3>
+                <button class="modal-close" type="button" aria-label="Close" data-confirm-close>x</button>
+            </div>
+            <div class="modal-body">
+                <div class="waitlist-confirm-hero">
+                    <div class="waitlist-confirm-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                    </div>
+                    <p class="waitlist-confirm-desc" data-i18n="waitlistConfirmDesc">You are on the waitlist.</p>
+                </div>
+                <button class="btn btn-primary btn-full" type="button" data-confirm-close data-i18n="waitlistConfirmCta">Back to site</button>
             </div>
         </div>
     </div>

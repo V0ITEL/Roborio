@@ -1,0 +1,159 @@
+<svg
+      width="1600"
+      height="900"
+      viewBox="0 0 1600 900"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+     
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <defs>
+        <linearGradient id="securityGrad1" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stop-color="#0b0f14" stop-opacity="1"/>
+          <stop offset="50%" stop-color="#0f131a" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#0b0f14" stop-opacity="1"/>
+        </linearGradient>
+        <radialGradient id="securityRadar" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0"/>
+          <stop offset="70%" stop-color="#3b82f6" stop-opacity="0.08"/>
+          <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      
+      <rect width="1600" height="900" fill="url(#securityGrad1)"/>
+      <rect width="1600" height="900" fill="url(#securityRadar)"/>
+      
+      <rect
+        x="150"
+        y="500"
+        width="500"
+        height="320"
+        stroke="#3b82f6"
+        stroke-width="1.5"
+        fill="none"
+        opacity="0.25"
+        rx="4"/>
+      <rect
+        x="170"
+        y="520"
+        width="460"
+        height="280"
+        stroke="#3b82f6"
+        stroke-width="1"
+        fill="none"
+        opacity="0.15"
+        rx="4"/>
+      
+      <rect
+        x="750"
+        y="550"
+        width="400"
+        height="280"
+        stroke="#22d3ee"
+        stroke-width="1.5"
+        fill="none"
+        opacity="0.2"
+        rx="4"/>
+      <rect
+        x="770"
+        y="570"
+        width="360"
+        height="240"
+        stroke="#22d3ee"
+        stroke-width="1"
+        fill="none"
+        opacity="0.12"
+        rx="4"/>
+      
+      <rect
+        x="1200"
+        y="600"
+        width="320"
+        height="220"
+        stroke="#10b981"
+        stroke-width="1.5"
+        fill="none"
+        opacity="0.18"
+        rx="4"/>
+      
+      <circle cx="800" cy="700" r="280" stroke="#3b82f6" stroke-width="1" fill="none" opacity="0.12"/>
+      <circle cx="800" cy="700" r="350" stroke="#3b82f6" stroke-width="0.5" fill="none" opacity="0.08"/>
+      <circle cx="800" cy="700" r="420" stroke="#22d3ee" stroke-width="0.5" fill="none" opacity="0.06"/>
+      
+      <line x1="800" y1="700" x2="1100" y2="550" stroke="#3b82f6" stroke-width="1.5" opacity="0.2"/>
+      <line x1="800" y1="700" x2="500" y2="800" stroke="#22d3ee" stroke-width="1" opacity="0.15"/>
+      
+      <g opacity="0.25">
+        <path d="M 150 500 L 150 520 M 150 500 L 170 500" stroke="#3b82f6" stroke-width="2"/>
+        <path d="M 750 550 L 750 575 M 750 550 L 775 550" stroke="#22d3ee" stroke-width="2"/>
+        <path d="M 650 500 L 650 520 M 650 500 L 630 500" stroke="#3b82f6" stroke-width="2"/>
+        <path d="M 1150 550 L 1150 575 M 1150 550 L 1125 550" stroke="#22d3ee" stroke-width="2"/>
+        <path d="M 150 820 L 150 800 M 150 820 L 170 820" stroke="#3b82f6" stroke-width="2"/>
+        <path d="M 1520 820 L 1520 800 M 1520 820 L 1500 820" stroke="#10b981" stroke-width="2"/>
+      </g>
+      
+      <g opacity="0.04">
+        <line x1="0" y1="600" x2="1600" y2="600" stroke="#3b82f6" stroke-width="1"/>
+        <line x1="0" y1="700" x2="1600" y2="700" stroke="#3b82f6" stroke-width="1"/>
+        <line x1="0" y1="800" x2="1600" y2="800" stroke="#3b82f6" stroke-width="1"/>
+        <line x1="400" y1="0" x2="400" y2="900" stroke="#3b82f6" stroke-width="1"/>
+        <line x1="800" y1="0" x2="800" y2="900" stroke="#3b82f6" stroke-width="1"/>
+        <line x1="1200" y1="0" x2="1200" y2="900" stroke="#3b82f6" stroke-width="1"/>
+      </g>
+      
+      <circle cx="400" cy="660" r="3" fill="#3b82f6" opacity="0.5"/>
+      <circle cx="900" cy="690" r="2.5" fill="#22d3ee" opacity="0.45"/>
+      <circle cx="1360" cy="710" r="2" fill="#10b981" opacity="0.4"/>
+      
+      
+      <g transform="translate(800, 280) scale(2.5)">
+        
+        <path d="M -70 -30 L 70 -30 L 90 30 L -90 30 Z" 
+              fill="#0f131a" stroke="#3b82f6" stroke-width="2.5" opacity="0.9"/>
+        <path d="M -60 -20 L 60 -20 L 75 20 L -75 20 Z" 
+              fill="#3b82f6" opacity="0.12"/>
+        
+        
+        <circle cx="0" cy="0" r="50" fill="#0b0f14" stroke="#3b82f6" stroke-width="2.5" opacity="0.95"/>
+        <circle cx="0" cy="0" r="40" fill="#3b82f6" opacity="0.25"/>
+        <circle cx="0" cy="0" r="30" fill="#0b0f14" stroke="#22d3ee" stroke-width="2" opacity="0.9"/>
+        <circle cx="0" cy="0" r="20" fill="#22d3ee" opacity="0.5"/>
+        <circle cx="0" cy="0" r="10" fill="#22d3ee" opacity="0.7"/>
+        
+        
+        <circle cx="-12" cy="-12" r="8" fill="#22d3ee" opacity="0.9"/>
+        <circle cx="-8" cy="-8" r="4" fill="#ffffff" opacity="0.7"/>
+        
+        
+        <line x1="-100" y1="0" x2="100" y2="0" stroke="#3b82f6" stroke-width="1.5" opacity="0.5"/>
+        <line x1="-90" y1="18" x2="90" y2="18" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+        <line x1="-90" y1="-18" x2="90" y2="-18" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+        
+        
+        <path d="M -50 50 L -130 160 L 130 160 L 50 50 Z" 
+              fill="#3b82f6" opacity="0.12" stroke="#3b82f6" stroke-width="1.5"/>
+        <path d="M -40 50 L -110 140 L 110 140 L 40 50 Z" 
+              fill="#3b82f6" opacity="0.08" stroke="#22d3ee" stroke-width="1.5"/>
+        
+        
+        <line x1="0" y1="50" x2="0" y2="150" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+        <line x1="-25" y1="50" x2="-70" y2="150" stroke="#10b981" stroke-width="1.5" opacity="0.3"/>
+        <line x1="25" y1="50" x2="70" y2="150" stroke="#10b981" stroke-width="1.5" opacity="0.3"/>
+        
+        
+        <circle cx="-80" cy="130" r="5" fill="#10b981" opacity="0.7"/>
+        <circle cx="0" cy="140" r="5" fill="#10b981" opacity="0.7"/>
+        <circle cx="80" cy="130" r="5" fill="#10b981" opacity="0.7"/>
+        
+        
+        <rect x="-90" y="-35" width="12" height="8" fill="#10b981" opacity="0.6" rx="1"/>
+        <rect x="78" y="-35" width="12" height="8" fill="#10b981" opacity="0.6" rx="1"/>
+        
+        
+        <rect x="-15" y="-50" width="30" height="20" fill="#0f131a" stroke="#22d3ee" stroke-width="2" opacity="0.8"/>
+        
+        
+        <circle cx="0" cy="0" r="140" fill="#3b82f6" opacity="0.05"/>
+        <circle cx="0" cy="0" r="100" fill="#3b82f6" opacity="0.06"/>
+      </g>
+    </svg>
