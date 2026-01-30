@@ -117,6 +117,7 @@
         // Variables will be set in initMarketplace
         let currentRobot = null;
         let addRobotBtn, addRobotToolbarBtn, addRobotEmptyBtn, addRobotModal, addRobotForm;
+        let seedRobotsBtn;
         let gridToggleBtns;
         let rentRobotModal, successModal, robotsGrid, marketplaceEmpty, marketplaceNoResults, marketplaceSentinel;
         let filterBtns, walletModal, walletModalOverlay;
@@ -163,6 +164,160 @@
             notify.info('Connect your wallet to continue');
             openExistingWalletModal();
             return null;
+        }
+
+        async function maybeSeedRobots({ force = false } = {}) {
+            if (!import.meta.env.DEV) return;
+            const params = new URLSearchParams(window.location.search);
+            if (!force && !params.has('seed')) return;
+            if (!force && localStorage.getItem('marketplaceSeeded') === 'true') return;
+
+            const wallet = requireWalletOrPrompt();
+            if (!wallet) return;
+
+            const supabase = getSupabase();
+            if (!supabase) {
+                notify.error('Supabase not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+                return;
+            }
+
+            if (!force && robotsMap.size > 0) {
+                notify.error('Marketplace already has robots. Clear it or use a fresh project to seed.');
+                return;
+            }
+
+            const baseUrl = window.location.origin;
+            const imageMap = {
+                delivery: `${baseUrl}/images/usecases/delivery.svg`,
+                cleaning: `${baseUrl}/images/usecases/cleaning.svg`,
+                security: `${baseUrl}/images/usecases/security.svg`,
+                inspection: `${baseUrl}/images/usecases/inspection.svg`,
+                warehouse: `${baseUrl}/images/usecases/warehouse.svg`,
+                agriculture: `${baseUrl}/images/usecases/agriculture.svg`,
+                healthcare: `${baseUrl}/images/usecases/healthcare.svg`
+            };
+
+            const seedRobots = [
+                {
+                    name: 'SpeedBot X1',
+                    category: 'delivery',
+                    description: 'Last-mile courier bot for dense urban routes with fast turnaround.',
+                    price: 28,
+                    priceUnit: 'hour',
+                    speed: '18 km/h',
+                    payload: '15 kg',
+                    battery: '6 hours',
+                    location: 'San Francisco, USA'
+                },
+                {
+                    name: 'CleanSweep Pro',
+                    category: 'cleaning',
+                    description: 'Autonomous floor cleaning for offices, retail, and airports.',
+                    price: 19,
+                    priceUnit: 'hour',
+                    speed: '6 km/h',
+                    payload: '10 L',
+                    battery: '8 hours',
+                    location: 'Austin, USA'
+                },
+                {
+                    name: 'Sentinel Guard',
+                    category: 'security',
+                    description: 'Patrol unit with night vision and incident reporting.',
+                    price: 45,
+                    priceUnit: 'hour',
+                    speed: '10 km/h',
+                    payload: 'N/A',
+                    battery: '12 hours',
+                    location: 'Miami, USA'
+                },
+                {
+                    name: 'Inspectra Mini',
+                    category: 'inspection',
+                    description: 'Compact inspection rover for warehouse aisles and lines.',
+                    price: 24,
+                    priceUnit: 'hour',
+                    speed: '8 km/h',
+                    payload: '5 kg',
+                    battery: '7 hours',
+                    location: 'Chicago, USA'
+                },
+                {
+                    name: 'Warehouse Runner',
+                    category: 'warehouse',
+                    description: 'High-volume pick/pack helper with RFID scanning.',
+                    price: 32,
+                    priceUnit: 'hour',
+                    speed: '12 km/h',
+                    payload: '40 kg',
+                    battery: '9 hours',
+                    location: 'Dallas, USA'
+                },
+                {
+                    name: 'FieldSprout A2',
+                    category: 'agriculture',
+                    description: 'Precision crop monitoring and micro-spray automation.',
+                    price: 35,
+                    priceUnit: 'hour',
+                    speed: '7 km/h',
+                    payload: '20 L',
+                    battery: '10 hours',
+                    location: 'Fresno, USA'
+                },
+                {
+                    name: 'CareMate 3',
+                    category: 'healthcare',
+                    description: 'Hospital assistance bot for supplies and patient transport.',
+                    price: 50,
+                    priceUnit: 'hour',
+                    speed: '5 km/h',
+                    payload: '25 kg',
+                    battery: '8 hours',
+                    location: 'Boston, USA'
+                },
+                {
+                    name: 'Hospy Concierge',
+                    category: 'hospitality',
+                    description: 'Guest assistance bot for hotels and venues.',
+                    price: 22,
+                    priceUnit: 'hour',
+                    speed: '6 km/h',
+                    payload: '8 kg',
+                    battery: '7 hours',
+                    location: 'Las Vegas, USA'
+                }
+            ];
+
+            const rows = seedRobots.map((robot) => ({
+                owner_wallet: wallet,
+                name: robot.name,
+                category: robot.category,
+                description: robot.description,
+                image_url: imageMap[robot.category] || imageMap.delivery,
+                price: robot.price,
+                price_unit: robot.priceUnit,
+                speed: robot.speed || null,
+                payload: robot.payload || null,
+                battery: robot.battery || null,
+                location: robot.location || null,
+                contact: 'ops@roborio.com',
+                is_available: true
+            }));
+
+            const { data, error } = await supabase
+                .from('robots')
+                .insert(rows)
+                .select();
+
+            if (error) {
+                log.error('[Marketplace]', 'Seed error:', error);
+                notify.error(`Seeding failed: ${error.message}`);
+                return;
+            }
+
+            localStorage.setItem('marketplaceSeeded', 'true');
+            notify.success(`Seeded ${data?.length || rows.length} robots`);
+            await loadRobotsFromDB({ reset: true });
         }
 
         // Modal helpers are in ./marketplace/ui/modals.js
@@ -852,6 +1007,10 @@
                 openModal(addRobotModal);
             });
 
+            seedRobotsBtn?.addEventListener('click', async () => {
+                await maybeSeedRobots({ force: true });
+            });
+
             // Cancel Add Robot
             document.getElementById('cancelAddRobot')?.addEventListener('click', () => {
                 closeModal(addRobotModal);
@@ -937,6 +1096,7 @@
             addRobotBtn = document.getElementById('addRobotBtn');
             addRobotToolbarBtn = document.getElementById('addRobotToolbarBtn');
             addRobotEmptyBtn = document.getElementById('addRobotEmptyBtn');
+            seedRobotsBtn = document.getElementById('seedRobotsBtn');
             addRobotModal = document.getElementById('addRobotModal');
             addRobotForm = document.getElementById('addRobotForm');
             rentRobotModal = document.getElementById('rentRobotModal');
@@ -956,6 +1116,11 @@
             robotAddedModal = document.getElementById('robotAddedModal');
             robotErrorModal = document.getElementById('robotErrorModal');
 
+            const params = new URLSearchParams(window.location.search);
+            if (seedRobotsBtn && import.meta.env.DEV && (params.has('seed') || params.has('admin'))) {
+                seedRobotsBtn.classList.add('is-visible');
+            }
+
             cardRenderer = createCardRenderer({
                 robotsMap,
                 robotsGrid,
@@ -974,9 +1139,10 @@
 
             // Load robots from DB (async, will call refreshOwnershipUI when done)
             setupInfiniteScroll();
-            loadRobotsFromDB({ reset: true }).then(() => {
+            loadRobotsFromDB({ reset: true }).then(async () => {
                 // Refresh ownership UI after robots are loaded
                 cardRenderer.refreshOwnershipUI();
+                await maybeSeedRobots();
             });
 
             setupFilters();
