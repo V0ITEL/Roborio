@@ -1357,7 +1357,7 @@ padding-bottom: 12px;
 -webkit-overflow-scrolling: touch;
 scroll-snap-type: x proximity;
 overscroll-behavior-x: contain;
-touch-action: pan-y;
+touch-action: pan-x;
 scrollbar-width: none;
 }
 .marketplace-filters::-webkit-scrollbar {

@@ -20,16 +20,38 @@
         let loadError = false;
 
         // ============ SOLANA ESCROW CONFIG ============
-        // Program ID will be updated after deployment
-        const ESCROW_PROGRAM_ID = 'RoboEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-        const SOLANA_NETWORK = 'devnet'; 
-        const SOL_PRICE_USD = 100; 
+        const ESCROW_PLACEHOLDER_ID = 'RoboEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+        const DEFAULT_ESCROW_CONFIG = {
+            programId: import.meta.env.VITE_ESCROW_PROGRAM_ID || ESCROW_PLACEHOLDER_ID,
+            network: import.meta.env.VITE_SOLANA_NETWORK || 'devnet',
+            rpcEndpoint: import.meta.env.VITE_SOLANA_RPC_ENDPOINT || '',
+            solPriceUsd: Number(import.meta.env.VITE_SOL_PRICE_USD) || 100,
+            platformFeeWallet: import.meta.env.VITE_ESCROW_PLATFORM_WALLET || ''
+        };
+
+        function getEscrowConfig() {
+            const override = window.ROBORIO_ESCROW_CONFIG || {};
+            return {
+                ...DEFAULT_ESCROW_CONFIG,
+                ...override
+            };
+        }
+
+        const ESCROW_CONFIG = getEscrowConfig();
+        const ESCROW_PROGRAM_ID = ESCROW_CONFIG.programId;
+        const SOLANA_NETWORK = ESCROW_CONFIG.network;
+        const SOL_PRICE_USD = ESCROW_CONFIG.solPriceUsd;
 
         // Get Solana connection
         function getSolanaConnection() {
+            if (ESCROW_CONFIG.rpcEndpoint) {
+                return new solanaWeb3.Connection(ESCROW_CONFIG.rpcEndpoint, 'confirmed');
+            }
             const endpoint = SOLANA_NETWORK === 'mainnet-beta'
                 ? 'https://api.mainnet-beta.solana.com'
-                : 'https://api.devnet.solana.com';
+                : SOLANA_NETWORK === 'testnet'
+                    ? 'https://api.testnet.solana.com'
+                    : 'https://api.devnet.solana.com';
             return new solanaWeb3.Connection(endpoint, 'confirmed');
         }
 
@@ -53,6 +75,105 @@
             return Math.floor(solAmount * solanaWeb3.LAMPORTS_PER_SOL);
         }
 
+        function hasValidEscrowProgram() {
+            return ESCROW_PROGRAM_ID && ESCROW_PROGRAM_ID !== ESCROW_PLACEHOLDER_ID;
+        }
+
+        async function getConnectedProvider() {
+            const provider = getWalletProvider();
+            if (!provider) return null;
+            if (!provider.publicKey && provider.connect) {
+                await provider.connect();
+            }
+            return provider.publicKey ? provider : null;
+        }
+
+        function compactRobotIdForEscrow(robotId) {
+            const raw = String(robotId || '').trim();
+            if (!raw) {
+                throw new Error('Robot ID is missing for escrow.');
+            }
+            const compact = raw.replace(/[^a-zA-Z0-9]/g, '');
+            const candidate = compact.length ? compact : raw;
+            if (candidate.length <= 32) {
+                return candidate;
+            }
+            return candidate.slice(0, 32);
+        }
+
+        const DISCRIMINATOR_CACHE = new Map();
+
+        async function getAnchorDiscriminator(ixName) {
+            if (DISCRIMINATOR_CACHE.has(ixName)) {
+                return DISCRIMINATOR_CACHE.get(ixName);
+            }
+            const preimage = new TextEncoder().encode(`global:${ixName}`);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', preimage);
+            const discriminator = Buffer.from(hashBuffer).subarray(0, 8);
+            DISCRIMINATOR_CACHE.set(ixName, discriminator);
+            return discriminator;
+        }
+
+        function encodeU64LE(value) {
+            const buffer = Buffer.alloc(8);
+            const bigValue = typeof value === 'bigint' ? value : BigInt(value);
+            buffer.writeBigUInt64LE(bigValue, 0);
+            return buffer;
+        }
+
+        function encodeString(value) {
+            const encoded = new TextEncoder().encode(value);
+            const length = Buffer.alloc(4);
+            length.writeUInt32LE(encoded.length, 0);
+            return Buffer.concat([length, Buffer.from(encoded)]);
+        }
+
+        async function buildInstructionData(ixName, args = []) {
+            const discriminator = await getAnchorDiscriminator(ixName);
+            if (!args.length) {
+                return discriminator;
+            }
+            return Buffer.concat([discriminator, ...args]);
+        }
+
+        async function sendEscrowTransaction(instruction, provider) {
+            const connection = getSolanaConnection();
+            const transaction = new solanaWeb3.Transaction().add(instruction);
+            transaction.feePayer = provider.publicKey;
+            const latest = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = latest.blockhash;
+            const signed = await provider.signTransaction(transaction);
+            const signature = await connection.sendRawTransaction(signed.serialize());
+            await connection.confirmTransaction({
+                signature,
+                blockhash: latest.blockhash,
+                lastValidBlockHeight: latest.lastValidBlockHeight
+            }, 'confirmed');
+            return signature;
+        }
+
+        function getSolscanTxUrl(signature) {
+            const baseUrl = 'https://solscan.io/tx/' + signature;
+            if (SOLANA_NETWORK === 'devnet') {
+                return `${baseUrl}?cluster=devnet`;
+            }
+            if (SOLANA_NETWORK === 'testnet') {
+                return `${baseUrl}?cluster=testnet`;
+            }
+            return baseUrl;
+        }
+
+        function getSolscanAddressUrl(address) {
+            const baseUrl = 'https://solscan.io/account/' + address;
+            if (SOLANA_NETWORK === 'devnet') {
+                return `${baseUrl}?cluster=devnet`;
+            }
+            if (SOLANA_NETWORK === 'testnet') {
+                return `${baseUrl}?cluster=testnet`;
+            }
+            return baseUrl;
+        }
+
         // Find Escrow PDA
         async function findEscrowPDA(renter, operator, robotId) {
             const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
@@ -68,48 +189,99 @@
             return pda;
         }
 
-        // Create rental escrow transaction
+        async function buildCreateRentalInstruction({ renter, operator, escrowPda, robotId, amountLamports, durationHours }) {
+            const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
+            const data = await buildInstructionData('create_rental', [
+                encodeString(robotId),
+                encodeU64LE(amountLamports),
+                encodeU64LE(durationHours)
+            ]);
+            const keys = [
+                { pubkey: renter, isSigner: true, isWritable: true },
+                { pubkey: operator, isSigner: false, isWritable: false },
+                { pubkey: escrowPda, isSigner: false, isWritable: true },
+                { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false }
+            ];
+            return new solanaWeb3.TransactionInstruction({ programId, keys, data });
+        }
+
+        async function buildCompleteRentalInstruction({ renter, operator, escrowPda }) {
+            const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
+            const data = await buildInstructionData('complete_rental');
+            const keys = [
+                { pubkey: renter, isSigner: true, isWritable: true },
+                { pubkey: operator, isSigner: false, isWritable: true },
+                { pubkey: escrowPda, isSigner: false, isWritable: true }
+            ];
+            return new solanaWeb3.TransactionInstruction({ programId, keys, data });
+        }
+
+        async function buildCancelRentalInstruction({ signer, renter, escrowPda }) {
+            const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
+            const data = await buildInstructionData('cancel_rental');
+            const keys = [
+                { pubkey: signer, isSigner: true, isWritable: true },
+                { pubkey: renter, isSigner: false, isWritable: true },
+                { pubkey: escrowPda, isSigner: false, isWritable: true }
+            ];
+            return new solanaWeb3.TransactionInstruction({ programId, keys, data });
+        }
+
+        async function buildClaimExpiredInstruction({ operator, escrowPda }) {
+            const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
+            const data = await buildInstructionData('claim_expired');
+            const keys = [
+                { pubkey: operator, isSigner: true, isWritable: true },
+                { pubkey: escrowPda, isSigner: false, isWritable: true }
+            ];
+            return new solanaWeb3.TransactionInstruction({ programId, keys, data });
+        }
+
+        async function buildCloseEscrowInstruction({ renter, escrowPda }) {
+            const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
+            const data = await buildInstructionData('close_escrow');
+            const keys = [
+                { pubkey: renter, isSigner: true, isWritable: true },
+                { pubkey: escrowPda, isSigner: false, isWritable: true }
+            ];
+            return new solanaWeb3.TransactionInstruction({ programId, keys, data });
+        }
+
         async function createRentalEscrow(operatorWallet, robotId, amountUsd, durationHours = 24) {
-            const provider = getWalletProvider();
+            if (!hasValidEscrowProgram()) {
+                throw new Error('Escrow program is not configured. Set VITE_ESCROW_PROGRAM_ID.');
+            }
+
+            const provider = await getConnectedProvider();
             if (!provider) {
                 throw new Error('No Solana wallet found. Please install Phantom or Solflare.');
             }
 
-            const connection = getSolanaConnection();
             const renter = provider.publicKey;
             const operator = new solanaWeb3.PublicKey(operatorWallet);
-            const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
-
-            // For MVP, we'll do a simple transfer to operator
-            // Full escrow program integration can be added after deployment
+            const escrowRobotId = compactRobotIdForEscrow(robotId);
+            const escrowPda = await findEscrowPDA(renter, operator, escrowRobotId);
             const lamports = usdToLamports(amountUsd);
 
-            // Create transfer instruction
-            const transaction = new solanaWeb3.Transaction().add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: renter,
-                    toPubkey: operator,
-                    lamports: lamports
-                })
-            );
+            const instruction = await buildCreateRentalInstruction({
+                renter,
+                operator,
+                escrowPda,
+                robotId: escrowRobotId,
+                amountLamports: lamports,
+                durationHours
+            });
 
-            // Get recent blockhash
-            const { blockhash } = await connection.getLatestBlockhash();
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = renter;
-
-            // Sign and send transaction
-            const signed = await provider.signTransaction(transaction);
-            const signature = await connection.sendRawTransaction(signed.serialize());
-
-            // Wait for confirmation
-            await connection.confirmTransaction(signature, 'confirmed');
+            const signature = await sendEscrowTransaction(instruction, provider);
 
             return {
                 success: true,
-                signature: signature,
+                signature,
+                escrowPda: escrowPda.toBase58(),
                 amount: lamports,
-                amountSol: lamports / solanaWeb3.LAMPORTS_PER_SOL
+                amountSol: lamports / solanaWeb3.LAMPORTS_PER_SOL,
+                robotId: escrowRobotId,
+                expiresAt: Date.now() + durationHours * 3600 * 1000
             };
         }
 
