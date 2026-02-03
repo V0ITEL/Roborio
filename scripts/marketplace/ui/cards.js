@@ -130,9 +130,20 @@ export function createCardRenderer({
     openDeleteModalById,
     openRentModalById,
     openRentModal,
+    openEscrowModalById,
+    getEscrowForRobot,
     updateEmptyState,
     log
 }) {
+    function applyEscrowButtonState(button, robotId) {
+        if (!button || !robotId || typeof getEscrowForRobot !== 'function') {
+            button?.classList.add('is-hidden');
+            return;
+        }
+        const hasEscrow = !!getEscrowForRobot(robotId);
+        button.classList.toggle('is-hidden', !hasEscrow);
+    }
+
     function addRobotCardFromRobot(robot) {
         const card = document.createElement('article');
         card.className = 'market-card';
@@ -223,12 +234,20 @@ export function createCardRenderer({
         rentBtn.textContent = 'Rent Now';
         actions.appendChild(rentBtn);
 
+        const escrowBtn = document.createElement('button');
+        escrowBtn.className = 'btn-escrow is-hidden';
+        escrowBtn.type = 'button';
+        escrowBtn.textContent = 'Open Escrow';
+        actions.appendChild(escrowBtn);
+
         card.appendChild(top);
         card.appendChild(imageDiv);
         card.appendChild(body);
         card.appendChild(actions);
 
         rentBtn.addEventListener('click', () => openRentModalById(robot.id));
+        escrowBtn.addEventListener('click', () => openEscrowModalById?.(robot.id));
+        applyEscrowButtonState(escrowBtn, robot.id);
 
         const editBtn = card.querySelector('.btn-edit');
         const deleteBtn = card.querySelector('.btn-delete');
@@ -305,12 +324,23 @@ export function createCardRenderer({
         rentBtn.textContent = 'Rent Now';
         actions.appendChild(rentBtn);
 
+        const escrowBtn = document.createElement('button');
+        escrowBtn.className = 'btn-escrow is-hidden';
+        escrowBtn.type = 'button';
+        escrowBtn.textContent = 'Open Escrow';
+        actions.appendChild(escrowBtn);
+
         card.appendChild(top);
         card.appendChild(imageDiv);
         card.appendChild(body);
         card.appendChild(actions);
 
         rentBtn.addEventListener('click', () => openRentModal(card));
+        if (data.id) {
+            card.dataset.robotId = data.id;
+            escrowBtn.addEventListener('click', () => openEscrowModalById?.(data.id));
+            applyEscrowButtonState(escrowBtn, data.id);
+        }
 
         robotsGrid.insertBefore(card, robotsGrid.firstChild);
         setTimeout(() => card.classList.add('animate-in'), 50);
@@ -371,11 +401,21 @@ export function createCardRenderer({
         log.debug('[Marketplace]', 'refreshOwnershipUI completed, connected wallet:', connectedWallet ? connectedWallet.slice(0, 8) + '...' : 'none');
     }
 
+    function updateEscrowAction(robotId, hasEscrow) {
+        if (!robotsGrid || !robotId) return;
+        const card = robotsGrid.querySelector(`[data-robot-id="${robotId}"]`);
+        if (!card) return;
+        const btn = card.querySelector('.btn-escrow');
+        if (!btn) return;
+        btn.classList.toggle('is-hidden', !hasEscrow);
+    }
+
     return {
         addRobotCardFromRobot,
         addRobotCardFromDB,
         addRobotCard,
         refreshOwnershipUI,
+        updateEscrowAction,
         renderRobotImage,
         formatCategory
     };

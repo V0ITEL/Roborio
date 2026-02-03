@@ -1,13 +1,13 @@
 'use strict';
 
-        import { getFullWalletAddress } from './wallet.js';
+        import { getFullWalletAddress, getConnectedWalletProvider } from './wallet.js';
         import notify from './ui/notify.js';
         import { withLoading } from './ui/withLoading.js';
         import { normalizeRobot } from './models/robot.js';
         import { safeSelect } from './utils/safeSupabase.js';
         import { log } from './utils/logger.js';
         import * as solanaWeb3 from '@solana/web3.js';
-        import { initSupabase, getSupabase, saveRobotToDB, updateRobotInDB, deleteRobotFromDB } from './marketplace/api/supabase.js';
+        import { initSupabase, getSupabase, saveRobotToDB, updateRobotInDB, deleteRobotFromDB, upsertEscrowToDB, fetchEscrowsForWallet } from './marketplace/api/supabase.js';
         import { validateRobotData } from './marketplace/utils/validation.js';
         import { createCardRenderer } from './marketplace/ui/cards.js';
         import { openModal, closeModal, closeAllModals } from './marketplace/ui/modals.js';
@@ -28,6 +28,7 @@
             solPriceUsd: Number(import.meta.env.VITE_SOL_PRICE_USD) || 100,
             platformFeeWallet: import.meta.env.VITE_ESCROW_PLATFORM_WALLET || ''
         };
+        const AUTO_CLOSE_ESCROW_AFTER_COMPLETE = true;
 
         function getEscrowConfig() {
             const override = window.ROBORIO_ESCROW_CONFIG || {};
@@ -40,6 +41,7 @@
         const ESCROW_CONFIG = getEscrowConfig();
         const ESCROW_PROGRAM_ID = ESCROW_CONFIG.programId;
         const SOLANA_NETWORK = ESCROW_CONFIG.network;
+        const SOLANA_CLUSTER = SOLANA_NETWORK === 'mainnet' ? 'mainnet-beta' : SOLANA_NETWORK;
         const SOL_PRICE_USD = ESCROW_CONFIG.solPriceUsd;
 
         // Get Solana connection
@@ -47,26 +49,12 @@
             if (ESCROW_CONFIG.rpcEndpoint) {
                 return new solanaWeb3.Connection(ESCROW_CONFIG.rpcEndpoint, 'confirmed');
             }
-            const endpoint = SOLANA_NETWORK === 'mainnet-beta'
+            const endpoint = SOLANA_CLUSTER === 'mainnet-beta'
                 ? 'https://api.mainnet-beta.solana.com'
-                : SOLANA_NETWORK === 'testnet'
+                : SOLANA_CLUSTER === 'testnet'
                     ? 'https://api.testnet.solana.com'
                     : 'https://api.devnet.solana.com';
             return new solanaWeb3.Connection(endpoint, 'confirmed');
-        }
-
-        // Get wallet provider (Phantom, Solflare, etc.)
-        function getWalletProvider() {
-            if (window.phantom?.solana?.isPhantom) {
-                return window.phantom.solana;
-            }
-            if (window.solflare?.isSolflare) {
-                return window.solflare;
-            }
-            if (window.backpack) {
-                return window.backpack;
-            }
-            return null;
         }
 
         // Convert USD to lamports (1 SOL = 1e9 lamports)
@@ -80,12 +68,200 @@
         }
 
         async function getConnectedProvider() {
-            const provider = getWalletProvider();
+            const provider = getConnectedWalletProvider?.();
             if (!provider) return null;
             if (!provider.publicKey && provider.connect) {
-                await provider.connect();
+                try {
+                    await provider.connect();
+                } catch (error) {
+                    return null;
+                }
             }
-            return provider.publicKey ? provider : null;
+            if (!provider.publicKey) return null;
+            const expected = getFullWalletAddress();
+            const actual = provider.publicKey?.toBase58?.();
+            if (expected && actual && expected !== actual) {
+                notify.error('Wallet mismatch. Open the wallet menu and reconnect the correct wallet.');
+                return null;
+            }
+            return provider;
+        }
+
+        const MIN_FEE_LAMPORTS = 10000;
+        const CREATE_ESCROW_BUFFER_LAMPORTS = Math.floor(0.01 * solanaWeb3.LAMPORTS_PER_SOL);
+
+        function normalizeCluster(value) {
+            if (!value) return null;
+            const text = String(value).toLowerCase();
+            if (text.includes('devnet')) return 'devnet';
+            if (text.includes('testnet')) return 'testnet';
+            if (text.includes('mainnet')) return 'mainnet';
+            return text;
+        }
+
+        const GENESIS_HASH_CACHE = {
+            devnet: null,
+            testnet: null,
+            mainnet: null,
+            promise: null
+        };
+
+        function getClusterEndpoint(cluster) {
+            if (cluster === 'mainnet') return 'https://api.mainnet-beta.solana.com';
+            if (cluster === 'testnet') return 'https://api.testnet.solana.com';
+            return 'https://api.devnet.solana.com';
+        }
+
+        async function loadGenesisHashMap() {
+            if (GENESIS_HASH_CACHE.promise) return GENESIS_HASH_CACHE.promise;
+            GENESIS_HASH_CACHE.promise = (async () => {
+                const clusters = ['devnet', 'testnet', 'mainnet'];
+                await Promise.all(clusters.map(async (cluster) => {
+                    try {
+                        const connection = new solanaWeb3.Connection(getClusterEndpoint(cluster), 'confirmed');
+                        const hash = await connection.getGenesisHash();
+                        GENESIS_HASH_CACHE[cluster] = hash;
+                    } catch (error) {
+                        log.warn('[Marketplace]', 'Failed to load genesis hash for', cluster, error);
+                    }
+                }));
+                return GENESIS_HASH_CACHE;
+            })();
+            return GENESIS_HASH_CACHE.promise;
+        }
+
+        function getProviderEndpoint(provider) {
+            const safeGet = (getter) => {
+                try {
+                    return getter();
+                } catch (error) {
+                    return null;
+                }
+            };
+            return safeGet(() => provider?.connection?.rpcEndpoint)
+                || safeGet(() => provider?.connection?._rpcEndpoint)
+                || safeGet(() => provider?._connection?.rpcEndpoint)
+                || safeGet(() => provider?._connection?._rpcEndpoint)
+                || safeGet(() => provider?.adapter?.connection?.rpcEndpoint)
+                || safeGet(() => provider?.adapter?.connection?._rpcEndpoint)
+                || safeGet(() => provider?.wallet?.adapter?.connection?.rpcEndpoint)
+                || safeGet(() => provider?.wallet?.adapter?.connection?._rpcEndpoint)
+                || safeGet(() => provider?.rpcEndpoint)
+                || safeGet(() => provider?.endpoint)
+                || safeGet(() => provider?.rpc?.endpoint)
+                || safeGet(() => provider?.rpc?.rpcEndpoint)
+                || null;
+        }
+
+        async function detectWalletNetwork(provider) {
+            const cached = localStorage.getItem('wallet_active_network');
+            const cachedWallet = localStorage.getItem('wallet_active_network_wallet');
+            const providerKey = provider?.publicKey?.toString?.() || null;
+            if (cached && cachedWallet && providerKey && cachedWallet === providerKey) return cached;
+            const safeGet = (getter) => {
+                try {
+                    return getter();
+                } catch (error) {
+                    return null;
+                }
+            };
+            const direct = safeGet(() => provider?.network)
+                || safeGet(() => provider?.connection?.network)
+                || safeGet(() => provider?._connection?.network)
+                || safeGet(() => provider?.adapter?.connection?.network)
+                || null;
+            const endpoint = getProviderEndpoint(provider);
+            const normalized = normalizeCluster(direct || endpoint);
+            if (normalized) return normalized;
+
+            if (endpoint) {
+                try {
+                    const connection = new solanaWeb3.Connection(endpoint, 'confirmed');
+                    const walletGenesis = await connection.getGenesisHash();
+                    if (walletGenesis) {
+                        const map = await loadGenesisHashMap();
+                        const match = ['devnet', 'testnet', 'mainnet']
+                            .find((cluster) => map[cluster] === walletGenesis);
+                        if (match) return match;
+                    }
+                } catch (error) {
+                    log.debug('[Marketplace]', 'Wallet network detect via endpoint failed:', error?.message || error);
+                }
+            }
+
+            if (provider?.request) {
+                try {
+                    const walletGenesis = await provider.request({ method: 'getGenesisHash' });
+                    if (walletGenesis) {
+                        const map = await loadGenesisHashMap();
+                        const match = ['devnet', 'testnet', 'mainnet']
+                            .find((cluster) => map[cluster] === walletGenesis);
+                        if (match) return match;
+                    }
+                } catch (error) {
+                    try {
+                        const walletGenesis = await provider.request({ method: 'getGenesisHash', params: [] });
+                        if (walletGenesis) {
+                            const map = await loadGenesisHashMap();
+                            const match = ['devnet', 'testnet', 'mainnet']
+                                .find((cluster) => map[cluster] === walletGenesis);
+                            if (match) return match;
+                        }
+                    } catch (fallbackError) {
+                        log.debug('[Marketplace]', 'Wallet network request not available:', fallbackError?.message || fallbackError);
+                    }
+                }
+            }
+            return null;
+        }
+
+        function formatNetworkLabel(value) {
+            const normalized = normalizeCluster(value);
+            if (normalized === 'mainnet') return 'mainnet';
+            if (normalized === 'testnet') return 'testnet';
+            if (normalized === 'devnet') return 'devnet';
+            return normalized || 'unknown';
+        }
+
+        async function ensureWalletCanFundEscrow(provider, amountLamports) {
+            const walletNetwork = await detectWalletNetwork(provider);
+            const targetNetwork = formatNetworkLabel(SOLANA_CLUSTER);
+            if (!walletNetwork) {
+                throw new Error(`Wallet network not detected. Switch your wallet to ${targetNetwork} and try again.`);
+            }
+            if (normalizeCluster(walletNetwork) !== normalizeCluster(SOLANA_CLUSTER)) {
+                throw new Error(`Network mismatch. Switch your wallet to ${targetNetwork}.`);
+            }
+
+            const connection = getSolanaConnection();
+            const signerKey = provider.publicKey;
+            const accountInfo = await connection.getAccountInfo(signerKey);
+            if (!accountInfo) {
+                throw new Error(`Wallet has no SOL on ${targetNetwork}. Add SOL and try again.`);
+            }
+
+            const balance = await connection.getBalance(signerKey);
+            const requiredLamports = Number(amountLamports || 0) + CREATE_ESCROW_BUFFER_LAMPORTS + MIN_FEE_LAMPORTS;
+            if (balance < requiredLamports) {
+                const requiredSol = requiredLamports / solanaWeb3.LAMPORTS_PER_SOL;
+                throw new Error(`Insufficient SOL. Need about ${requiredSol.toFixed(4)} SOL to cover escrow and fees.`);
+            }
+        }
+
+        async function ensurePlatformWalletReady() {
+            if (!ESCROW_CONFIG.platformFeeWallet) return;
+            const targetNetwork = formatNetworkLabel(SOLANA_CLUSTER);
+            let platformKey;
+            try {
+                platformKey = new solanaWeb3.PublicKey(ESCROW_CONFIG.platformFeeWallet);
+            } catch (error) {
+                throw new Error('Invalid platform wallet address. Update VITE_ESCROW_PLATFORM_WALLET.');
+            }
+            const connection = getSolanaConnection();
+            const info = await connection.getAccountInfo(platformKey);
+            if (!info) {
+                throw new Error(`Platform wallet has no SOL on ${targetNetwork}. Fund it before completing.`);
+            }
         }
 
         function compactRobotIdForEscrow(robotId) {
@@ -99,6 +275,17 @@
                 return candidate;
             }
             return candidate.slice(0, 32);
+        }
+
+        function resolvePlatformKey(renterPubkey) {
+            try {
+                if (ESCROW_CONFIG.platformFeeWallet) {
+                    return new solanaWeb3.PublicKey(ESCROW_CONFIG.platformFeeWallet);
+                }
+            } catch (error) {
+                log.warn('[Marketplace]', 'Invalid platform wallet. Falling back to renter.', error);
+            }
+            return renterPubkey;
         }
 
         const DISCRIMINATOR_CACHE = new Map();
@@ -144,20 +331,36 @@
             transaction.recentBlockhash = latest.blockhash;
             const signed = await provider.signTransaction(transaction);
             const signature = await connection.sendRawTransaction(signed.serialize());
-            await connection.confirmTransaction({
-                signature,
-                blockhash: latest.blockhash,
-                lastValidBlockHeight: latest.lastValidBlockHeight
-            }, 'confirmed');
+            await confirmSignature(connection, signature, {
+                commitment: 'confirmed',
+                timeoutMs: 60000
+            });
             return signature;
+        }
+
+        async function confirmSignature(connection, signature, { commitment = 'confirmed', timeoutMs = 30000 } = {}) {
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+                const { value } = await connection.getSignatureStatuses([signature], { searchTransactionHistory: true });
+                const status = value?.[0];
+                if (status?.err) {
+                    throw new Error(`Transaction failed: ${JSON.stringify(status.err)}`);
+                }
+                const confirmation = status?.confirmationStatus || (status?.confirmations ? 'confirmed' : null);
+                if (confirmation === 'confirmed' || confirmation === 'finalized') {
+                    return status;
+                }
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+            throw new Error('Transaction confirmation timed out.');
         }
 
         function getSolscanTxUrl(signature) {
             const baseUrl = 'https://solscan.io/tx/' + signature;
-            if (SOLANA_NETWORK === 'devnet') {
+            if (SOLANA_CLUSTER === 'devnet') {
                 return `${baseUrl}?cluster=devnet`;
             }
-            if (SOLANA_NETWORK === 'testnet') {
+            if (SOLANA_CLUSTER === 'testnet') {
                 return `${baseUrl}?cluster=testnet`;
             }
             return baseUrl;
@@ -165,10 +368,10 @@
 
         function getSolscanAddressUrl(address) {
             const baseUrl = 'https://solscan.io/account/' + address;
-            if (SOLANA_NETWORK === 'devnet') {
+            if (SOLANA_CLUSTER === 'devnet') {
                 return `${baseUrl}?cluster=devnet`;
             }
-            if (SOLANA_NETWORK === 'testnet') {
+            if (SOLANA_CLUSTER === 'testnet') {
                 return `${baseUrl}?cluster=testnet`;
             }
             return baseUrl;
@@ -205,7 +408,7 @@
             return new solanaWeb3.TransactionInstruction({ programId, keys, data });
         }
 
-        async function buildCompleteRentalInstruction({ renter, operator, escrowPda }) {
+        async function buildCompleteRentalInstruction({ renter, operator, escrowPda, platform }) {
             const programId = new solanaWeb3.PublicKey(ESCROW_PROGRAM_ID);
             const data = await buildInstructionData('complete_rental');
             const keys = [
@@ -213,6 +416,7 @@
                 { pubkey: operator, isSigner: false, isWritable: true },
                 { pubkey: escrowPda, isSigner: false, isWritable: true }
             ];
+            keys.push({ pubkey: platform, isSigner: false, isWritable: true });
             return new solanaWeb3.TransactionInstruction({ programId, keys, data });
         }
 
@@ -261,7 +465,28 @@
             const operator = new solanaWeb3.PublicKey(operatorWallet);
             const escrowRobotId = compactRobotIdForEscrow(robotId);
             const escrowPda = await findEscrowPDA(renter, operator, escrowRobotId);
+            const connection = getSolanaConnection();
+            const existingInfo = await connection.getAccountInfo(escrowPda);
+            if (existingInfo?.data) {
+                const state = parseEscrowAccount(Buffer.from(existingInfo.data));
+                const amountLamports = state.amount ? Number(state.amount) : 0;
+                return {
+                    success: true,
+                    existing: true,
+                    signature: null,
+                    escrowPda: escrowPda.toBase58(),
+                    amount: amountLamports,
+                    amountSol: amountLamports ? amountLamports / solanaWeb3.LAMPORTS_PER_SOL : 0,
+                    robotId: escrowRobotId,
+                    renter: renter.toBase58(),
+                    operator: operator.toBase58(),
+                    status: state.status,
+                    statusLabel: ESCROW_STATUS_LABELS[state.status] || 'Unknown',
+                    expiresAt: state.expiresAt ? Number(state.expiresAt) * 1000 : null
+                };
+            }
             const lamports = usdToLamports(amountUsd);
+            await ensureWalletCanFundEscrow(provider, lamports);
 
             const instruction = await buildCreateRentalInstruction({
                 renter,
@@ -281,27 +506,114 @@
                 amount: lamports,
                 amountSol: lamports / solanaWeb3.LAMPORTS_PER_SOL,
                 robotId: escrowRobotId,
+                renter: renter.toBase58(),
+                operator: operator.toBase58(),
                 expiresAt: Date.now() + durationHours * 3600 * 1000
             };
+        }
+
+        const ESCROW_STATUS_LABELS = ['Active', 'Completed', 'Cancelled', 'Expired'];
+        const FINAL_ESCROW_STATUS = new Set([1, 2, 3]);
+
+        function isFinalEscrowStatus(status, statusLabel) {
+            if (Number.isInteger(status)) {
+                return FINAL_ESCROW_STATUS.has(status);
+            }
+            const normalized = (statusLabel || '').toLowerCase();
+            return normalized === 'completed' || normalized === 'cancelled' || normalized === 'expired';
+        }
+
+        function isActiveEscrowStatus(status, statusLabel) {
+            return !isFinalEscrowStatus(status, statusLabel);
+        }
+
+        function getEscrowStatusKey(status, statusLabel) {
+            if (Number.isInteger(status)) {
+                if (status === 0) return 'active';
+                if (status === 1) return 'completed';
+                if (status === 2) return 'cancelled';
+                if (status === 3) return 'expired';
+            }
+            const label = (statusLabel || '').toLowerCase();
+            if (label.includes('complete')) return 'completed';
+            if (label.includes('cancel')) return 'cancelled';
+            if (label.includes('expire')) return 'expired';
+            if (label.includes('active')) return 'active';
+            return 'active';
+        }
+
+        function readBigUInt64LE(buffer, offset) {
+            const view = new DataView(buffer.buffer, buffer.byteOffset + offset, 8);
+            return view.getBigUint64(0, true);
+        }
+
+        function readBigInt64LE(buffer, offset) {
+            const view = new DataView(buffer.buffer, buffer.byteOffset + offset, 8);
+            return view.getBigInt64(0, true);
+        }
+
+        function parseEscrowAccount(data) {
+            let offset = 8; // discriminator
+            const renter = new solanaWeb3.PublicKey(data.subarray(offset, offset + 32)).toBase58();
+            offset += 32;
+            const operator = new solanaWeb3.PublicKey(data.subarray(offset, offset + 32)).toBase58();
+            offset += 32;
+            const robotIdLength = data.readUInt32LE(offset);
+            offset += 4;
+            const robotId = new TextDecoder().decode(data.subarray(offset, offset + robotIdLength));
+            offset += robotIdLength;
+            const amount = readBigUInt64LE(data, offset);
+            offset += 8;
+            const createdAt = readBigInt64LE(data, offset);
+            offset += 8;
+            const expiresAt = readBigInt64LE(data, offset);
+            offset += 8;
+            const status = data[offset];
+            offset += 1;
+            const bump = data[offset];
+            return { renter, operator, robotId, amount, createdAt, expiresAt, status, bump };
+        }
+
+        async function fetchEscrowState(escrowAddress) {
+            const connection = getSolanaConnection();
+            const info = await connection.getAccountInfo(new solanaWeb3.PublicKey(escrowAddress));
+            if (!info?.data) return null;
+            return parseEscrowAccount(Buffer.from(info.data));
         }
 
         // ============ MARKETPLACE UI & LOGIC ============
         // Variables will be set in initMarketplace
         let currentRobot = null;
+        let currentEscrowContext = null;
+        const escrowsByRobotId = new Map();
+        const escrowsByPda = new Map();
+        let escrowAutoRefreshTimer = null;
         let addRobotBtn, addRobotToolbarBtn, addRobotEmptyBtn, addRobotModal, addRobotForm;
         let seedRobotsBtn;
         let gridToggleBtns;
         let rentRobotModal, successModal, robotsGrid, marketplaceEmpty, marketplaceNoResults, marketplaceSentinel;
         let filterBtns, walletModal, walletModalOverlay;
         let searchInput, sortSelect;
-        let viewAllBtn, viewMineBtn;
+        let viewAllBtn, viewMineBtn, viewEscrowsBtn, syncEscrowsBtn, historyToggleBtn;
+        let escrowStatusFilterEl, escrowStatusButtons;
         let robotAddedModal, robotErrorModal;
+        let escrowDetails, escrowStatusValue, escrowAddressValue, escrowExpiresValue, escrowTxLink, escrowNetworkValue;
+        let escrowRenterValue, escrowOperatorValue;
+        let escrowRoleValue, escrowAmountValue, escrowRobotValue, escrowOpenDashboardBtn;
+        let escrowClosedBadge, escrowCancelLabel, escrowCancelHelp, escrowDisputeBtn;
+        let escrowPrimaryRow, escrowPrimaryActionBtn, escrowPrimaryHint, escrowActionSummary, escrowMoreToggle, escrowActionsGroup;
+        let escrowCompleteBtn, escrowCancelBtn, escrowClaimBtn, escrowCloseBtn, escrowRefreshBtn;
+        let escrowNetworkAlert, escrowNetworkAlertText, escrowBalanceAlert, escrowBalanceAlertText;
+        let escrowActionBlocked = false;
+        let escrowActionBlockReason = '';
         let cardRenderer = null;
         let resetAddRobotForm = null;
         let activeCategory = 'all';
         let searchTerm = '';
         let sortMode = 'newest';
         let viewMode = 'all';
+        let includeEscrowHistory = false;
+        let escrowStatusFilter = 'active';
         const PAGE_SIZE = 12;
         let nextOffset = 0;
         let hasMore = true;
@@ -336,6 +648,802 @@
             notify.info('Connect your wallet to continue');
             openExistingWalletModal();
             return null;
+        }
+
+        function formatDateTime(timestampMs) {
+            if (!timestampMs) return '--';
+            return new Date(timestampMs).toLocaleString();
+        }
+
+        function formatShortAddress(address) {
+            if (!address) return '--';
+            const value = String(address);
+            if (value.length <= 10) return value;
+            return `${value.slice(0, 4)}...${value.slice(-4)}`;
+        }
+
+        function formatSolAmount(amountSol, amountLamports) {
+            let amount = null;
+            if (amountSol !== null && amountSol !== undefined) {
+                const parsed = Number(amountSol);
+                if (Number.isFinite(parsed)) {
+                    amount = parsed;
+                }
+            }
+            if (amount === null) {
+                if (typeof amountLamports === 'bigint') {
+                    amount = Number(amountLamports) / solanaWeb3.LAMPORTS_PER_SOL;
+                } else if (amountLamports !== null && amountLamports !== undefined) {
+                    const parsedLamports = Number(amountLamports);
+                    if (Number.isFinite(parsedLamports)) {
+                        amount = parsedLamports / solanaWeb3.LAMPORTS_PER_SOL;
+                    }
+                }
+            }
+            if (amount === null || Number.isNaN(amount)) return '--';
+            return `${amount.toFixed(4)} SOL`;
+        }
+
+        function getEscrowRole(context) {
+            const wallet = getConnectedWallet();
+            if (!wallet) {
+                return { role: 'disconnected', label: 'Connect wallet' };
+            }
+            if (!context) {
+                return { role: 'viewer', label: 'Access: Viewer' };
+            }
+            if (wallet === context.renter && wallet === context.operator) {
+                return { role: 'both', label: 'Access: Client/Operator' };
+            }
+            if (wallet === context.renter) {
+                return { role: 'client', label: 'Access: Client' };
+            }
+            if (wallet === context.operator) {
+                return { role: 'operator', label: 'Access: Operator' };
+            }
+            return { role: 'viewer', label: 'Access: Viewer' };
+        }
+
+        const ESCROW_AUTO_REFRESH_MS = 20000;
+        let hasShownEscrowHistoryToast = false;
+
+        function getEscrowRobotKey(context) {
+            return context?.robotDbId || context?.robotId || null;
+        }
+
+        function startEscrowAutoRefresh() {
+            if (escrowAutoRefreshTimer) {
+                clearInterval(escrowAutoRefreshTimer);
+            }
+            escrowAutoRefreshTimer = setInterval(() => {
+                if (successModal?.classList.contains('active')) {
+                    refreshEscrowState();
+                }
+            }, ESCROW_AUTO_REFRESH_MS);
+        }
+
+        function stopEscrowAutoRefresh() {
+            if (!escrowAutoRefreshTimer) return;
+            clearInterval(escrowAutoRefreshTimer);
+            escrowAutoRefreshTimer = null;
+        }
+
+        async function persistEscrowContext(context, state = null) {
+            const supabase = getSupabase();
+            if (!supabase) return;
+
+            const status = state ? state.status : context.status;
+            const statusLabel = Number.isInteger(status) ? ESCROW_STATUS_LABELS[status] : context.statusLabel;
+            const expiresAt = state?.expiresAt
+                ? new Date(Number(state.expiresAt) * 1000).toISOString()
+                : context.expiresAt
+                    ? new Date(context.expiresAt).toISOString()
+                    : null;
+
+            const payload = {
+                escrow_pda: context.escrowPda,
+                network: SOLANA_NETWORK,
+                renter_wallet: context.renter,
+                operator_wallet: context.operator,
+                robot_id: context.robotDbId || context.robotId,
+                robot_seed: context.robotId,
+                robot_name: context.robotName || null,
+                amount_lamports: context.amount ?? null,
+                amount_sol: context.amountSol ?? null,
+                status: Number.isInteger(status) ? status : null,
+                status_label: statusLabel || null,
+                expires_at: expiresAt,
+                last_signature: context.lastSignature || context.signature || null,
+                cancel_status: context.cancelStatus || null,
+                cancel_requested_by: context.cancelRequestedBy || null,
+                cancel_requested_at: context.cancelRequestedAt
+                    ? new Date(context.cancelRequestedAt).toISOString()
+                    : null,
+                cancel_resolved_by: context.cancelResolvedBy || null,
+                cancel_resolved_at: context.cancelResolvedAt
+                    ? new Date(context.cancelResolvedAt).toISOString()
+                    : null,
+                closed_at: context.closedAt ? new Date(context.closedAt).toISOString() : null,
+                closed_by: context.closedBy || null,
+                close_signature: context.closeSignature || null,
+                updated_at: new Date().toISOString()
+            };
+
+            await upsertEscrowToDB(payload);
+        }
+
+        async function registerEscrowContext(context, state = null) {
+            if (!context?.escrowPda) return;
+            const key = getEscrowRobotKey(context);
+            const status = state ? state.status : context.status;
+            const statusLabel = Number.isInteger(status) ? ESCROW_STATUS_LABELS[status] : context.statusLabel;
+            const expiresAt = state?.expiresAt
+                ? Number(state.expiresAt) * 1000
+                : context.expiresAt || null;
+            const merged = {
+                ...context,
+                status: Number.isInteger(status) ? status : context.status,
+                statusLabel,
+                expiresAt
+            };
+
+            if (key) {
+                escrowsByRobotId.set(String(key), merged);
+                cardRenderer?.updateEscrowAction?.(String(key), true);
+            }
+            escrowsByPda.set(context.escrowPda, merged);
+            if (currentEscrowContext?.escrowPda === context.escrowPda) {
+                currentEscrowContext = merged;
+            }
+            await persistEscrowContext(merged, state);
+        }
+
+        function clearEscrows() {
+            escrowsByRobotId.clear();
+            escrowsByPda.clear();
+            if (!robotsGrid || !cardRenderer?.updateEscrowAction) return;
+            robotsGrid.querySelectorAll('[data-robot-id]').forEach((card) => {
+                const robotId = card.dataset.robotId;
+                cardRenderer.updateEscrowAction(robotId, false);
+            });
+        }
+
+        async function loadEscrowsForWallet(wallet, { showToast = false } = {}) {
+            if (!wallet) return;
+            const { success, data } = await fetchEscrowsForWallet(wallet, SOLANA_NETWORK);
+            if (!success || !Array.isArray(data)) return;
+
+            data.forEach((row) => {
+                if (!row?.escrow_pda) return;
+                const context = {
+                    escrowPda: row.escrow_pda,
+                    renter: row.renter_wallet,
+                    operator: row.operator_wallet,
+                    robotId: row.robot_seed || row.robot_id,
+                    robotDbId: row.robot_id,
+                    robotName: row.robot_name,
+                    amount: row.amount_lamports,
+                    amountSol: row.amount_sol,
+                    status: row.status,
+                    statusLabel: row.status_label,
+                    expiresAt: row.expires_at ? Date.parse(row.expires_at) : null,
+                    lastSignature: row.last_signature,
+                    cancelStatus: row.cancel_status,
+                    cancelRequestedBy: row.cancel_requested_by,
+                    cancelRequestedAt: row.cancel_requested_at ? Date.parse(row.cancel_requested_at) : null,
+                    cancelResolvedBy: row.cancel_resolved_by,
+                    cancelResolvedAt: row.cancel_resolved_at ? Date.parse(row.cancel_resolved_at) : null,
+                    closedAt: row.closed_at ? Date.parse(row.closed_at) : null,
+                    closedBy: row.closed_by,
+                    closeSignature: row.close_signature
+                };
+                if (context.robotDbId) {
+                    escrowsByRobotId.set(String(context.robotDbId), context);
+                    cardRenderer?.updateEscrowAction?.(String(context.robotDbId), true);
+                }
+                escrowsByPda.set(context.escrowPda, context);
+            });
+
+            if (data.length > 0 && !hasShownEscrowHistoryToast) {
+                notify.info('Escrow loaded from history.');
+                hasShownEscrowHistoryToast = true;
+            }
+
+            if (showToast) {
+                notify.success(`Escrow sync complete (${data.length}).`);
+            }
+        }
+
+        function applyEscrowActionBlock(blocked, reason) {
+            escrowActionBlocked = blocked;
+            escrowActionBlockReason = reason || '';
+            if (!blocked) return;
+            if (escrowPrimaryHint && reason) {
+                escrowPrimaryHint.textContent = reason;
+            }
+            if (escrowActionSummary && reason) {
+                escrowActionSummary.textContent = reason;
+            }
+            const primaryAction = escrowPrimaryActionBtn?.dataset?.action || '';
+            [escrowPrimaryActionBtn, escrowCompleteBtn, escrowCancelBtn, escrowDisputeBtn, escrowClaimBtn, escrowCloseBtn]
+                .filter(Boolean)
+                .forEach((btn) => {
+                    if (btn === escrowPrimaryActionBtn && primaryAction === 'refresh') {
+                        return;
+                    }
+                    btn.disabled = true;
+                });
+        }
+
+        function resetEscrowAlerts() {
+            if (escrowNetworkAlert) {
+                escrowNetworkAlert.classList.add('is-hidden');
+            }
+            if (escrowBalanceAlert) {
+                escrowBalanceAlert.classList.add('is-hidden');
+            }
+            escrowActionBlocked = false;
+            escrowActionBlockReason = '';
+        }
+
+        async function updateEscrowWarnings(context) {
+            resetEscrowAlerts();
+            if (!context || !escrowDetails) return;
+            const provider = await getConnectedProvider();
+            if (!provider) return;
+
+            const walletNetwork = await detectWalletNetwork(provider);
+            const targetNetwork = formatNetworkLabel(SOLANA_CLUSTER);
+            const walletNetworkLabel = formatNetworkLabel(walletNetwork);
+            let blocked = false;
+            let blockReason = '';
+
+            if (walletNetwork && normalizeCluster(walletNetwork) !== normalizeCluster(SOLANA_CLUSTER)) {
+                if (escrowNetworkAlert && escrowNetworkAlertText) {
+                    escrowNetworkAlertText.textContent = `Switch your wallet to ${targetNetwork} to continue.`;
+                    escrowNetworkAlert.classList.remove('is-hidden');
+                }
+                blocked = true;
+                blockReason = `Network mismatch: wallet is ${walletNetworkLabel}, escrow is ${targetNetwork}.`;
+            } else if (!walletNetwork && escrowNetworkAlert && escrowNetworkAlertText) {
+                escrowNetworkAlertText.textContent = `Wallet network not detected. Make sure it's set to ${targetNetwork}.`;
+                escrowNetworkAlert.classList.remove('is-hidden');
+                blocked = true;
+                blockReason = `Wallet network not detected. Switch to ${targetNetwork}.`;
+            }
+
+            const connection = getSolanaConnection();
+            const signerKey = provider.publicKey;
+            let balanceWarning = '';
+            let balanceBlocks = false;
+            try {
+                const signerInfo = await connection.getAccountInfo(signerKey);
+                if (!signerInfo) {
+                    balanceWarning = `Fund this wallet on ${targetNetwork} to cover network fees.`;
+                    balanceBlocks = true;
+                } else {
+                    const balance = await connection.getBalance(signerKey);
+                    if (balance < MIN_FEE_LAMPORTS) {
+                        balanceWarning = `Low balance. Add SOL on ${targetNetwork} for fees.`;
+                        balanceBlocks = true;
+                    }
+                }
+            } catch (error) {
+                log.warn('[Marketplace]', 'Failed to load wallet balance:', error);
+            }
+
+            const connectedWallet = getConnectedWallet();
+            const isClient = !!connectedWallet && connectedWallet === context.renter;
+            if (isClient && ESCROW_CONFIG.platformFeeWallet) {
+                try {
+                    const platformKey = new solanaWeb3.PublicKey(ESCROW_CONFIG.platformFeeWallet);
+                    const platformInfo = await connection.getAccountInfo(platformKey);
+                    if (!platformInfo) {
+                        balanceWarning = balanceWarning
+                            ? `${balanceWarning} Platform wallet needs SOL on ${targetNetwork} to receive fees.`
+                            : `Platform wallet needs SOL on ${targetNetwork} to receive fees.`;
+                    }
+                } catch (error) {
+                    log.warn('[Marketplace]', 'Invalid platform wallet when checking balance.', error);
+                }
+            }
+
+            if (balanceWarning && escrowBalanceAlert && escrowBalanceAlertText) {
+                escrowBalanceAlertText.textContent = balanceWarning;
+                escrowBalanceAlert.classList.remove('is-hidden');
+            }
+
+            if (!blocked && balanceBlocks) {
+                blocked = true;
+                blockReason = balanceWarning || 'Insufficient SOL for network fees.';
+            }
+
+            if (blocked) {
+                applyEscrowActionBlock(true, blockReason);
+            }
+        }
+
+        function updateEscrowUI(context, state = null) {
+            if (!escrowDetails) return;
+            if (!context) {
+                escrowDetails.classList.add('is-hidden');
+                [escrowPrimaryActionBtn, escrowCompleteBtn, escrowCancelBtn, escrowDisputeBtn, escrowClaimBtn, escrowCloseBtn, escrowRefreshBtn]
+                    .filter(Boolean)
+                    .forEach((btn) => {
+                        btn.disabled = true;
+                    });
+                resetEscrowAlerts();
+                return;
+            }
+            escrowDetails.classList.remove('is-hidden');
+            [escrowPrimaryActionBtn, escrowCompleteBtn, escrowCancelBtn, escrowDisputeBtn, escrowClaimBtn, escrowCloseBtn, escrowRefreshBtn]
+                .filter(Boolean)
+                .forEach((btn) => {
+                    btn.disabled = false;
+                });
+
+            if (escrowNetworkValue) {
+                escrowNetworkValue.textContent = SOLANA_NETWORK;
+            }
+
+            const roleInfo = getEscrowRole(context);
+            if (escrowRoleValue) {
+                escrowRoleValue.textContent = roleInfo.label;
+                escrowRoleValue.dataset.role = roleInfo.role;
+            }
+
+            if (escrowClosedBadge) {
+                escrowClosedBadge.classList.toggle('is-hidden', !context.closedAt);
+            }
+
+            if (escrowStatusValue) {
+                if (state) {
+                    const label = ESCROW_STATUS_LABELS[state.status] || 'Unknown';
+                    escrowStatusValue.textContent = label;
+                    escrowStatusValue.dataset.status = label.toLowerCase();
+                } else if (context.statusLabel) {
+                    escrowStatusValue.textContent = context.statusLabel;
+                    escrowStatusValue.dataset.status = context.statusLabel.toLowerCase();
+                } else {
+                    escrowStatusValue.textContent = 'Pending';
+                    escrowStatusValue.dataset.status = 'pending';
+                }
+            }
+
+            if (escrowRobotValue) {
+                escrowRobotValue.textContent = context.robotName || state?.robotId || context.robotId || context.robotDbId || '--';
+            }
+
+            if (escrowAmountValue) {
+                const amountLamports = state?.amount ?? context.amount;
+                const contextAmountSol = context.amountSol !== null && context.amountSol !== undefined
+                    ? Number(context.amountSol)
+                    : null;
+                const amountSol = Number.isFinite(contextAmountSol)
+                    ? contextAmountSol
+                    : typeof state?.amount === 'bigint'
+                        ? Number(state.amount) / solanaWeb3.LAMPORTS_PER_SOL
+                        : amountLamports !== null && amountLamports !== undefined
+                            ? Number(amountLamports) / solanaWeb3.LAMPORTS_PER_SOL
+                            : null;
+                escrowAmountValue.textContent = formatSolAmount(amountSol, amountLamports);
+            }
+
+            if (escrowAddressValue) {
+                escrowAddressValue.textContent = context.escrowPda || '--';
+                escrowAddressValue.href = context.escrowPda ? getSolscanAddressUrl(context.escrowPda) : '#';
+            }
+
+            if (escrowRenterValue) {
+                escrowRenterValue.textContent = formatShortAddress(context.renter);
+                escrowRenterValue.href = context.renter ? getSolscanAddressUrl(context.renter) : '#';
+            }
+            if (escrowOperatorValue) {
+                escrowOperatorValue.textContent = formatShortAddress(context.operator);
+                escrowOperatorValue.href = context.operator ? getSolscanAddressUrl(context.operator) : '#';
+            }
+
+            if (escrowExpiresValue) {
+                if (state?.expiresAt) {
+                    escrowExpiresValue.textContent = formatDateTime(Number(state.expiresAt) * 1000);
+                } else if (context.expiresAt) {
+                    escrowExpiresValue.textContent = formatDateTime(context.expiresAt);
+                } else {
+                    escrowExpiresValue.textContent = '--';
+                }
+            }
+
+            const txSignature = context.lastSignature || context.signature;
+            if (escrowTxLink) {
+                escrowTxLink.href = txSignature ? getSolscanTxUrl(txSignature) : '#';
+                escrowTxLink.textContent = txSignature ? 'View on Solscan' : '--';
+            }
+
+            const statusValue = Number.isInteger(state?.status)
+                ? state.status
+                : Number.isInteger(context.status)
+                    ? context.status
+                    : null;
+            const statusLabelHint = state
+                ? ESCROW_STATUS_LABELS[state.status] || ''
+                : context.statusLabel || escrowStatusValue?.textContent || '';
+            const statusKey = getEscrowStatusKey(statusValue, statusLabelHint);
+            const isActive = statusKey === 'active';
+            const isFinal = statusKey === 'completed' || statusKey === 'cancelled' || statusKey === 'expired';
+            const expiresAtSeconds = typeof state?.expiresAt === 'bigint'
+                ? Number(state.expiresAt)
+                : Number.isFinite(state?.expiresAt)
+                    ? Number(state.expiresAt)
+                    : Number.isFinite(context.expiresAt)
+                        ? Math.floor(context.expiresAt / 1000)
+                        : null;
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            const isExpired = expiresAtSeconds ? expiresAtSeconds < nowSeconds : false;
+            const connectedWallet = getConnectedWallet();
+            const isClient = !!connectedWallet && connectedWallet === context.renter;
+            const isOperator = !!connectedWallet && connectedWallet === context.operator;
+            const hasOnChainState = !!state;
+            const cancelStatus = context.cancelStatus || null;
+            const cancelRequestedBy = context.cancelRequestedBy || null;
+            const isCancelRequested = cancelStatus === 'requested';
+            const isCancelDisputed = cancelStatus === 'disputed';
+            const isCancelApproved = cancelStatus === 'approved';
+
+            if (escrowCompleteBtn) {
+                escrowCompleteBtn.classList.toggle('is-hidden', !isClient);
+                escrowCompleteBtn.disabled = !(hasOnChainState && isActive && isClient);
+            }
+            if (escrowCancelBtn) {
+                if (isClient) {
+                    escrowCancelBtn.classList.remove('is-hidden');
+                    escrowCancelBtn.disabled = !hasOnChainState || !isActive || isCancelRequested || isCancelDisputed || isCancelApproved;
+                } else if (isOperator) {
+                    escrowCancelBtn.classList.toggle('is-hidden', !isCancelRequested || cancelRequestedBy !== context.renter);
+                    escrowCancelBtn.disabled = !hasOnChainState || !isActive || !isCancelRequested || cancelRequestedBy !== context.renter;
+                } else {
+                    escrowCancelBtn.classList.add('is-hidden');
+                    escrowCancelBtn.disabled = true;
+                }
+            }
+            if (escrowCancelLabel && escrowCancelHelp) {
+                if (isCancelDisputed) {
+                    escrowCancelLabel.textContent = 'Cancel disputed';
+                    escrowCancelHelp.textContent = 'A dispute has been opened for this escrow.';
+                } else if (isCancelRequested) {
+                    if (isOperator) {
+                        escrowCancelLabel.textContent = 'Approve cancel';
+                        escrowCancelHelp.textContent = 'Client requested cancellation.';
+                    } else {
+                        escrowCancelLabel.textContent = 'Cancel requested';
+                        escrowCancelHelp.textContent = 'Waiting for operator approval.';
+                    }
+                } else {
+                    escrowCancelLabel.textContent = isClient ? 'Request cancel' : 'Cancel';
+                    escrowCancelHelp.textContent = 'Request cancellation (requires operator approval).';
+                }
+            }
+            if (escrowDisputeBtn) {
+                const showDispute = isOperator && isCancelRequested && cancelRequestedBy === context.renter && !isCancelDisputed;
+                escrowDisputeBtn.classList.toggle('is-hidden', !showDispute);
+                escrowDisputeBtn.disabled = !showDispute;
+            }
+            if (escrowClaimBtn) {
+                escrowClaimBtn.classList.toggle('is-hidden', !isOperator);
+                escrowClaimBtn.disabled = !(hasOnChainState && isActive && isExpired && isOperator);
+            }
+            if (escrowCloseBtn) {
+                escrowCloseBtn.classList.toggle('is-hidden', !isClient);
+                escrowCloseBtn.disabled = !(hasOnChainState && isFinal && isClient);
+            }
+            if (escrowRefreshBtn) escrowRefreshBtn.disabled = false;
+
+            if (escrowActionSummary) {
+                const statusLabel = escrowStatusValue?.textContent || 'Status';
+                const roleLabel = roleInfo.label.replace('Access: ', '');
+                const cancelSuffix = isCancelRequested
+                    ? ' · Cancel requested'
+                    : isCancelDisputed
+                        ? ' · Dispute opened'
+                        : '';
+                escrowActionSummary.textContent = hasOnChainState
+                    ? `${statusLabel} · ${roleLabel}${cancelSuffix}`
+                    : `No on-chain data · ${roleLabel}${cancelSuffix}`;
+            }
+
+            const hideOtherActions = isFinal || !!context.closedAt;
+            if (escrowMoreToggle) {
+                escrowMoreToggle.classList.toggle('is-hidden', hideOtherActions);
+            }
+            if (escrowActionsGroup) {
+                escrowActionsGroup.classList.toggle('is-hidden', hideOtherActions);
+            }
+            if (escrowPrimaryRow) {
+                escrowPrimaryRow.classList.toggle('is-hidden', !!context.closedAt);
+            }
+
+            if (escrowPrimaryActionBtn && escrowPrimaryHint) {
+                let primary = { label: 'Refresh', hint: 'Pull the latest escrow status.', action: 'refresh', disabled: false };
+
+                if (roleInfo.role === 'disconnected') {
+                    primary = { label: 'Connect wallet', hint: 'Connect to manage this escrow.', action: null, disabled: true };
+                } else if (roleInfo.role === 'viewer') {
+                    primary = { label: 'No actions', hint: 'This escrow belongs to another wallet.', action: null, disabled: true };
+                } else if (!hasOnChainState) {
+                    primary = { label: 'Refresh', hint: 'Escrow not found on-chain yet. Refresh to sync.', action: 'refresh', disabled: false };
+                } else if (context.closedAt) {
+                    primary = { label: 'Escrow closed', hint: 'This escrow account is closed on-chain.', action: null, disabled: true };
+                } else if (isCancelDisputed) {
+                    primary = { label: 'Dispute opened', hint: 'This cancellation is in dispute.', action: null, disabled: true };
+                } else if (isCancelRequested) {
+                    if (isOperator) {
+                        primary = { label: 'Approve cancel', hint: 'Client requested cancellation.', action: 'cancel', disabled: false };
+                    } else {
+                        primary = { label: 'Cancel requested', hint: 'Waiting for operator approval.', action: null, disabled: true };
+                    }
+                } else if (isActive && isClient) {
+                    primary = { label: 'Complete', hint: 'Release funds after the job is done.', action: 'complete', disabled: false };
+                } else if (isActive && isOperator) {
+                    if (isExpired) {
+                        primary = { label: 'Claim expired', hint: 'Claim funds after expiry.', action: 'claim', disabled: false };
+                    } else {
+                        primary = { label: 'Awaiting client', hint: 'Client completes to release funds.', action: null, disabled: true };
+                    }
+                } else if (isFinal && isClient) {
+                    primary = { label: 'Close escrow', hint: 'Close the escrow account after completion.', action: 'close', disabled: false };
+                } else if (isFinal) {
+                    primary = { label: 'Escrow closed', hint: 'No further actions required.', action: null, disabled: true };
+                }
+
+                escrowPrimaryActionBtn.textContent = primary.label;
+                escrowPrimaryActionBtn.dataset.action = primary.action || '';
+                escrowPrimaryActionBtn.disabled = primary.disabled;
+                escrowPrimaryHint.textContent = primary.hint;
+            }
+
+            if (escrowActionsGroup && escrowMoreToggle) {
+                const visibleActions = [escrowCompleteBtn, escrowCancelBtn, escrowClaimBtn, escrowCloseBtn, escrowDisputeBtn]
+                    .filter(Boolean)
+                    .filter((btn) => !btn.classList.contains('is-hidden'));
+                if (visibleActions.length === 0) {
+                    escrowActionsGroup.classList.add('is-collapsed');
+                    escrowMoreToggle.textContent = 'Other actions';
+                    escrowMoreToggle.disabled = true;
+                } else {
+                    escrowMoreToggle.disabled = false;
+                }
+            }
+
+            void updateEscrowWarnings(context);
+        }
+
+        async function refreshEscrowState() {
+            if (!currentEscrowContext?.escrowPda) return null;
+            try {
+                const state = await fetchEscrowState(currentEscrowContext.escrowPda);
+                if (state) {
+                    updateEscrowUI(currentEscrowContext, state);
+                    await registerEscrowContext(currentEscrowContext, state);
+                }
+                return state;
+            } catch (error) {
+                log.warn('[Marketplace]', 'Failed to refresh escrow state:', error);
+                return null;
+            }
+        }
+
+        async function handleEscrowAction(action) {
+            if (!currentEscrowContext) {
+                notify.error('No active escrow to manage.');
+                return;
+            }
+            if (!hasValidEscrowProgram()) {
+                notify.error('Escrow program is not configured.');
+                return;
+            }
+
+            const provider = await getConnectedProvider();
+            if (!provider) {
+                notify.error('Connect a Solana wallet to continue.');
+                return;
+            }
+            await updateEscrowWarnings(currentEscrowContext);
+            if (escrowActionBlocked) {
+                notify.error(escrowActionBlockReason || 'Escrow action is blocked.');
+                return;
+            }
+
+            const signer = provider.publicKey.toBase58();
+            const { renter, operator, escrowPda } = currentEscrowContext;
+            let latestState = null;
+            try {
+                latestState = await fetchEscrowState(escrowPda);
+            } catch (error) {
+                log.warn('[Marketplace]', 'Failed to fetch escrow state before action:', error);
+            }
+            if (!latestState) {
+                notify.error('Escrow not found on-chain. Click Refresh to sync.');
+                return;
+            }
+            const latestLabel = ESCROW_STATUS_LABELS[latestState.status] || '';
+            currentEscrowContext.status = latestState.status;
+            currentEscrowContext.statusLabel = latestLabel || currentEscrowContext.statusLabel;
+            updateEscrowUI(currentEscrowContext, latestState);
+
+            const statusKey = getEscrowStatusKey(latestState.status, latestLabel);
+            const expiresAtSeconds = typeof latestState.expiresAt === 'bigint'
+                ? Number(latestState.expiresAt)
+                : Number.isFinite(latestState.expiresAt)
+                    ? Number(latestState.expiresAt)
+                    : null;
+            const isExpired = expiresAtSeconds ? expiresAtSeconds < Math.floor(Date.now() / 1000) : false;
+
+            if (action === 'complete' && signer !== renter) {
+                notify.error('Only the renter can complete this escrow.');
+                return;
+            }
+            if (action === 'cancel' && signer !== renter && signer !== operator) {
+                notify.error('Only the renter or operator can cancel this escrow.');
+                return;
+            }
+            if (action === 'claim' && signer !== operator) {
+                notify.error('Only the operator can claim an expired escrow.');
+                return;
+            }
+            if (action === 'close' && signer !== renter) {
+                notify.error('Only the renter can close this escrow.');
+                return;
+            }
+            if (action === 'dispute' && signer !== operator) {
+                notify.error('Only the operator can dispute a cancellation.');
+                return;
+            }
+            if ((action === 'complete' || action === 'cancel' || action === 'claim') && statusKey && statusKey !== 'active') {
+                notify.error('Escrow is no longer active.');
+                return;
+            }
+            if (action === 'close' && statusKey && statusKey === 'active') {
+                notify.error('Close is only available after completion or cancellation.');
+                return;
+            }
+            if (action === 'claim' && !isExpired) {
+                notify.error('Escrow has not expired yet.');
+                return;
+            }
+
+            const cancelStatus = currentEscrowContext.cancelStatus || null;
+            const cancelRequestedBy = currentEscrowContext.cancelRequestedBy || null;
+            const isCancelRequested = cancelStatus === 'requested';
+            const isCancelDisputed = cancelStatus === 'disputed';
+
+            let instruction = null;
+            if (action === 'complete') {
+                await ensurePlatformWalletReady();
+                const platform = resolvePlatformKey(new solanaWeb3.PublicKey(renter));
+                instruction = await buildCompleteRentalInstruction({
+                    renter: new solanaWeb3.PublicKey(renter),
+                    operator: new solanaWeb3.PublicKey(operator),
+                    escrowPda: new solanaWeb3.PublicKey(escrowPda),
+                    platform
+                });
+            } else if (action === 'cancel') {
+                if (signer === renter && signer === operator) {
+                    instruction = await buildCancelRentalInstruction({
+                        signer: new solanaWeb3.PublicKey(signer),
+                        renter: new solanaWeb3.PublicKey(renter),
+                        escrowPda: new solanaWeb3.PublicKey(escrowPda)
+                    });
+                } else if (signer === renter) {
+                    if (isCancelDisputed) {
+                        notify.error('This escrow is in dispute.');
+                        return;
+                    }
+                    if (isCancelRequested) {
+                        if (operator && operator !== signer) {
+                            notify.info('Cancellation already requested. Switch to the operator wallet to approve.');
+                        } else {
+                            notify.info('Cancellation already requested. Waiting for operator approval.');
+                        }
+                        return;
+                    }
+                    currentEscrowContext.cancelStatus = 'requested';
+                    currentEscrowContext.cancelRequestedBy = signer;
+                    currentEscrowContext.cancelRequestedAt = Date.now();
+                    await registerEscrowContext(currentEscrowContext);
+                    updateEscrowUI(currentEscrowContext);
+                    notify.success('Cancellation request sent to operator.');
+                    return;
+                } else if (signer === operator) {
+                    if (!isCancelRequested || cancelRequestedBy !== renter) {
+                        notify.error('No cancellation request to approve.');
+                        return;
+                    }
+                    instruction = await buildCancelRentalInstruction({
+                        signer: new solanaWeb3.PublicKey(signer),
+                        renter: new solanaWeb3.PublicKey(renter),
+                        escrowPda: new solanaWeb3.PublicKey(escrowPda)
+                    });
+                }
+            } else if (action === 'claim') {
+                instruction = await buildClaimExpiredInstruction({
+                    operator: new solanaWeb3.PublicKey(operator),
+                    escrowPda: new solanaWeb3.PublicKey(escrowPda)
+                });
+            } else if (action === 'close') {
+                instruction = await buildCloseEscrowInstruction({
+                    renter: new solanaWeb3.PublicKey(renter),
+                    escrowPda: new solanaWeb3.PublicKey(escrowPda)
+                });
+            } else if (action === 'dispute') {
+                if (!isCancelRequested || cancelRequestedBy !== renter) {
+                    notify.error('No cancellation request to dispute.');
+                    return;
+                }
+                currentEscrowContext.cancelStatus = 'disputed';
+                currentEscrowContext.cancelResolvedBy = signer;
+                currentEscrowContext.cancelResolvedAt = Date.now();
+                await registerEscrowContext(currentEscrowContext);
+                updateEscrowUI(currentEscrowContext);
+                notify.info('Dispute opened for this escrow.');
+                return;
+            }
+
+            if (!instruction) {
+                notify.error('Unsupported escrow action.');
+                return;
+            }
+
+            try {
+                const signature = await sendEscrowTransaction(instruction, provider);
+                currentEscrowContext.lastSignature = signature;
+                if (action === 'complete') {
+                    currentEscrowContext.status = 1;
+                    currentEscrowContext.statusLabel = 'Completed';
+                    if (AUTO_CLOSE_ESCROW_AFTER_COMPLETE) {
+                        try {
+                            notify.info('Closing escrow account...');
+                            const closeInstruction = await buildCloseEscrowInstruction({
+                                renter: new solanaWeb3.PublicKey(renter),
+                                escrowPda: new solanaWeb3.PublicKey(escrowPda)
+                            });
+                            const closeSignature = await sendEscrowTransaction(closeInstruction, provider);
+                            currentEscrowContext.closedAt = Date.now();
+                            currentEscrowContext.closedBy = signer;
+                            currentEscrowContext.closeSignature = closeSignature;
+                        } catch (closeError) {
+                            log.warn('[Marketplace]', 'Auto-close failed:', closeError);
+                            notify.info('Escrow completed. Close skipped.');
+                        }
+                    }
+                }
+                if (action === 'cancel' && signer === operator) {
+                    currentEscrowContext.status = 2;
+                    currentEscrowContext.statusLabel = 'Cancelled';
+                    currentEscrowContext.cancelStatus = 'approved';
+                    currentEscrowContext.cancelResolvedBy = signer;
+                    currentEscrowContext.cancelResolvedAt = Date.now();
+                }
+                if (action === 'claim') {
+                    currentEscrowContext.status = 3;
+                    currentEscrowContext.statusLabel = 'Expired';
+                }
+                if (action === 'close') {
+                    currentEscrowContext.closedAt = Date.now();
+                    currentEscrowContext.closedBy = signer;
+                    currentEscrowContext.closeSignature = signature;
+                }
+                updateEscrowUI(currentEscrowContext);
+                await registerEscrowContext(currentEscrowContext);
+                await refreshEscrowState();
+                notify.success('Escrow updated on-chain.');
+            } catch (error) {
+                log.error('[Marketplace]', 'Escrow action failed:', error);
+                const message = (error?.message || '').toString();
+                if (message.includes('AccountNotInitialized') || message.includes('3012') || message.includes('0xbc4')) {
+                    notify.error('Escrow account is not initialized on-chain. Click Refresh or check that you are on the correct network and wallet.');
+                    return;
+                }
+                notify.error(message || 'Escrow action failed.');
+            }
         }
 
         async function maybeSeedRobots({ force = false } = {}) {
@@ -717,13 +1825,16 @@
         }
 
         function setViewMode(mode) {
-            const target = mode === 'mine' ? 'mine' : 'all';
-            if (target === 'mine' && !requireWalletOrPrompt()) {
+            const target = mode === 'mine' ? 'mine' : mode === 'escrows' ? 'escrows' : 'all';
+            if ((target === 'mine' || target === 'escrows') && !requireWalletOrPrompt()) {
                 return;
             }
             viewMode = target;
             if (viewAllBtn) viewAllBtn.classList.toggle('active', viewMode === 'all');
             if (viewMineBtn) viewMineBtn.classList.toggle('active', viewMode === 'mine');
+            if (viewEscrowsBtn) viewEscrowsBtn.classList.toggle('active', viewMode === 'escrows');
+            updateHistoryToggleUI();
+            updateEscrowStatusFilterUI();
             applyFiltersAndSort();
         }
 
@@ -734,7 +1845,54 @@
             if (viewMineBtn) {
                 viewMineBtn.addEventListener('click', () => setViewMode('mine'));
             }
+            if (viewEscrowsBtn) {
+                viewEscrowsBtn.addEventListener('click', () => setViewMode('escrows'));
+            }
             setViewMode('all');
+        }
+
+        function setupEscrowStatusFilter() {
+            if (!escrowStatusFilterEl) return;
+            escrowStatusButtons = Array.from(escrowStatusFilterEl.querySelectorAll('.escrow-status-btn'));
+            if (!escrowStatusButtons.length) return;
+            escrowStatusButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const status = btn.dataset.status || 'active';
+                    escrowStatusFilter = status;
+                    updateEscrowStatusFilterUI();
+                    applyFiltersAndSort();
+                });
+            });
+            updateEscrowStatusFilterUI();
+        }
+
+        function updateHistoryToggleUI() {
+            if (!historyToggleBtn) return;
+            const isEscrows = viewMode === 'escrows';
+            historyToggleBtn.classList.toggle('is-hidden', !isEscrows);
+            historyToggleBtn.disabled = !isEscrows;
+            historyToggleBtn.textContent = includeEscrowHistory ? 'History: On' : 'History: Off';
+        }
+
+        function updateEscrowStatusFilterUI() {
+            if (!escrowStatusFilterEl) return;
+            const isEscrows = viewMode === 'escrows';
+            escrowStatusFilterEl.classList.toggle('is-hidden', !isEscrows);
+            if (!escrowStatusButtons || !escrowStatusButtons.length) return;
+            const allowHistory = includeEscrowHistory;
+            if (!allowHistory && escrowStatusFilter !== 'active') {
+                escrowStatusFilter = 'active';
+            }
+            escrowStatusButtons.forEach((btn) => {
+                const status = btn.dataset.status;
+                const isActive = status === escrowStatusFilter;
+                btn.classList.toggle('active', isActive);
+                if (!allowHistory && status !== 'active') {
+                    btn.disabled = true;
+                } else {
+                    btn.disabled = false;
+                }
+            });
         }
 
         function ensureInfiniteSentinel() {
@@ -814,8 +1972,21 @@
                 const matchesCategory = activeCategory === 'all' || category === activeCategory;
                 const matchesSearch = !term || getCardSearchText(card).includes(term);
                 const ownerWallet = card.dataset.ownerWallet || '';
+                const robotId = card.dataset.robotId || '';
                 const matchesOwner = viewMode !== 'mine' || (wallet && ownerWallet === wallet);
-                const matches = matchesCategory && matchesSearch && matchesOwner;
+                let matchesEscrow = viewMode !== 'escrows';
+                if (!matchesEscrow) {
+                    const escrow = robotId ? escrowsByRobotId.get(robotId) : null;
+                    if (!escrow) {
+                        matchesEscrow = false;
+                    } else if (!includeEscrowHistory) {
+                        matchesEscrow = isActiveEscrowStatus(escrow.status, escrow.statusLabel);
+                    } else {
+                        const statusKey = getEscrowStatusKey(escrow.status, escrow.statusLabel);
+                        matchesEscrow = statusKey === escrowStatusFilter;
+                    }
+                }
+                const matches = matchesCategory && matchesSearch && matchesOwner && matchesEscrow;
                 card.classList.toggle('is-hidden', !matches);
                 if (matches) visibleCount += 1;
             });
@@ -855,6 +2026,33 @@
             document.getElementById('rentTotal').textContent = `$${robot.price}`;
 
             openModal(rentRobotModal);
+        }
+
+        /**
+         * Open existing escrow details by robot ID
+         * @param {string} robotId
+         */
+        async function openEscrowModalById(robotId) {
+            if (!requireWalletOrPrompt()) return;
+            const escrow = escrowsByRobotId.get(String(robotId));
+            if (!escrow) {
+                notify.info('No escrow found for this robot yet.');
+                return;
+            }
+
+            currentEscrowContext = escrow;
+            const robot = robotsMap.get(robotId);
+            if (robot) {
+                document.getElementById('operatorContactValue').textContent = robot.contact || 'Contact not provided';
+            }
+
+            updateEscrowUI(currentEscrowContext);
+            const state = await refreshEscrowState();
+            if (!state) {
+                notify.info('Showing last known escrow status. Click Refresh to sync.');
+            }
+            openModal(successModal);
+            startEscrowAutoRefresh();
         }
 
         /**
@@ -909,11 +2107,17 @@
                 if (!requireWalletOrPrompt()) return;
 
                 await withLoading(confirmBtn, async () => {
-                    const provider = getWalletProvider();
+                    if (!hasValidEscrowProgram()) {
+                        notify.error('Escrow program is not configured.');
+                        return;
+                    }
 
-                    // Use Robot object properties (already normalized)
-                    if (provider && currentRobot.ownerWallet && ESCROW_PROGRAM_ID !== 'RoboEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX') {
-                        // Real Solana transaction
+                    if (!currentRobot.ownerWallet) {
+                        notify.error('Operator wallet is missing for this robot.');
+                        return;
+                    }
+
+                    try {
                         log.info('[Marketplace]', 'Creating Solana escrow transaction...');
 
                         const result = await createRentalEscrow(
@@ -923,37 +2127,35 @@
                             24 // 24 hour rental duration
                         );
 
-                        log.info('[Marketplace]', 'Transaction successful:', result.signature);
-                        log.info('[Marketplace]', 'Amount paid:', result.amountSol, 'SOL');
+                        if (result.existing) {
+                            log.warn('[Marketplace]', 'Escrow already exists for this rental. Showing existing escrow.');
+                        } else {
+                            log.info('[Marketplace]', 'Transaction successful:', result.signature);
+                            log.info('[Marketplace]', 'Amount paid:', result.amountSol, 'SOL');
+                        }
 
-                        // Update success modal with transaction info
+                        currentEscrowContext = {
+                            ...result,
+                            robotName: currentRobot.name,
+                            robotDbId: currentRobot.id || null,
+                            priceUsd: currentRobot.price,
+                            priceUnit: currentRobot.priceUnit
+                        };
+
                         const contactEl = document.getElementById('operatorContactValue');
                         contactEl.textContent = currentRobot.contact || 'Contact not provided';
+                        updateEscrowUI(currentEscrowContext);
+                        await registerEscrowContext(currentEscrowContext);
+                        await refreshEscrowState();
 
-                        const linkWrap = document.createElement('div');
-                        linkWrap.style.marginTop = '10px';
-                        linkWrap.style.fontSize = '12px';
-                        linkWrap.style.color = 'var(--text-muted)';
-
-                        const link = document.createElement('a');
-                        link.href = `https://solscan.io/tx/${result.signature}?cluster=${SOLANA_NETWORK}`;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        link.style.color = 'var(--accent)';
-                        link.textContent = 'View transaction on Solscan';
-
-                        linkWrap.appendChild(link);
-                        contactEl.appendChild(linkWrap);
-                    } else {
-                        // Demo mode - simulate transaction
-                        log.info('[Marketplace]', 'Demo mode: Simulating escrow transaction...');
-                        await new Promise(r => setTimeout(r, 2000));
-                        document.getElementById('operatorContactValue').textContent = currentRobot.contact || 'Contact not provided';
+                        closeModal(rentRobotModal);
+                        openModal(successModal);
+                        startEscrowAutoRefresh();
+                        notify.success('Rental confirmed');
+                    } catch (error) {
+                        log.error('[Marketplace]', 'Escrow transaction failed:', error);
+                        notify.error(error?.message || 'Escrow transaction failed.');
                     }
-
-                    closeModal(rentRobotModal);
-                    openModal(successModal);
-                    notify.success('Rental confirmed');
                 }, { loadingText: 'Processing...' });
             });
 
@@ -1191,6 +2393,62 @@
             // Close success modal (rent)
             document.getElementById('closeSuccess')?.addEventListener('click', () => {
                 closeModal(successModal);
+                stopEscrowAutoRefresh();
+            });
+
+            escrowCompleteBtn?.addEventListener('click', () => {
+                withLoading(escrowCompleteBtn, () => handleEscrowAction('complete'), { loadingText: 'Completing...' });
+            });
+            escrowCancelBtn?.addEventListener('click', () => {
+                withLoading(escrowCancelBtn, () => handleEscrowAction('cancel'), { loadingText: 'Cancelling...' });
+            });
+            escrowDisputeBtn?.addEventListener('click', () => {
+                withLoading(escrowDisputeBtn, () => handleEscrowAction('dispute'), { loadingText: 'Opening dispute...' });
+            });
+            escrowClaimBtn?.addEventListener('click', () => {
+                withLoading(escrowClaimBtn, () => handleEscrowAction('claim'), { loadingText: 'Claiming...' });
+            });
+            escrowCloseBtn?.addEventListener('click', () => {
+                withLoading(escrowCloseBtn, () => handleEscrowAction('close'), { loadingText: 'Closing...' });
+            });
+            escrowPrimaryActionBtn?.addEventListener('click', () => {
+                const action = escrowPrimaryActionBtn.dataset.action || '';
+                if (!action) return;
+                if (action === 'refresh') {
+                    withLoading(escrowPrimaryActionBtn, () => refreshEscrowState(), { loadingText: 'Refreshing...' });
+                    return;
+                }
+                withLoading(escrowPrimaryActionBtn, () => handleEscrowAction(action), { loadingText: 'Processing...' });
+            });
+            escrowRefreshBtn?.addEventListener('click', () => {
+                withLoading(escrowRefreshBtn, () => refreshEscrowState(), { loadingText: 'Refreshing...' });
+            });
+            escrowMoreToggle?.addEventListener('click', () => {
+                if (!escrowActionsGroup) return;
+                const isCollapsed = escrowActionsGroup.classList.toggle('is-collapsed');
+                escrowMoreToggle.textContent = isCollapsed ? 'Other actions' : 'Hide actions';
+            });
+            escrowOpenDashboardBtn?.addEventListener('click', () => {
+                setViewMode('escrows');
+                closeModal(successModal);
+                stopEscrowAutoRefresh();
+                document.getElementById('marketplace-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            syncEscrowsBtn?.addEventListener('click', () => {
+                const wallet = requireWalletOrPrompt();
+                if (!wallet) return;
+                withLoading(syncEscrowsBtn, async () => {
+                    await loadEscrowsForWallet(wallet, { showToast: true });
+                    applyFiltersAndSort();
+                }, { loadingText: 'Syncing...' });
+            });
+
+            historyToggleBtn?.addEventListener('click', () => {
+                includeEscrowHistory = !includeEscrowHistory;
+                updateHistoryToggleUI();
+                updateEscrowStatusFilterUI();
+                applyFiltersAndSort();
             });
 
             // Close robot added success modal
@@ -1208,6 +2466,7 @@
             document.querySelectorAll('.marketplace-modal .mp-modal-close').forEach(btn => {
                 btn.addEventListener('click', () => {
                     closeAllModals();
+                    stopEscrowAutoRefresh();
                 });
             });
 
@@ -1215,6 +2474,7 @@
             document.querySelectorAll('.marketplace-modal .mp-modal-overlay').forEach(overlay => {
                 overlay.addEventListener('click', () => {
                     closeAllModals();
+                    stopEscrowAutoRefresh();
                 });
             });
 
@@ -1223,6 +2483,16 @@
                 btn.addEventListener('click', () => {
                     const card = btn.closest('.market-card');
                     openRentModal(card);
+                });
+            });
+
+            document.querySelectorAll('.market-card .btn-escrow').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const card = btn.closest('.market-card');
+                    const robotId = card?.dataset?.robotId;
+                    if (robotId) {
+                        openEscrowModalById(robotId);
+                    }
                 });
             });
 
@@ -1257,6 +2527,7 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     closeAllModals();
+                    stopEscrowAutoRefresh();
                 }
             });
         }
@@ -1272,6 +2543,39 @@
             addRobotForm = document.getElementById('addRobotForm');
             rentRobotModal = document.getElementById('rentRobotModal');
             successModal = document.getElementById('successModal');
+            escrowDetails = document.getElementById('escrowDetails');
+            escrowStatusValue = document.getElementById('escrowStatusValue');
+            escrowAddressValue = document.getElementById('escrowAddressLink');
+            escrowRenterValue = document.getElementById('escrowRenterLink');
+            escrowOperatorValue = document.getElementById('escrowOperatorLink');
+            escrowExpiresValue = document.getElementById('escrowExpiresValue');
+            escrowTxLink = document.getElementById('escrowTxLink');
+            escrowNetworkValue = document.getElementById('escrowNetworkValue');
+            escrowClosedBadge = document.getElementById('escrowClosedBadge');
+            escrowRoleValue = document.getElementById('escrowRoleValue');
+            escrowAmountValue = document.getElementById('escrowAmountValue');
+            escrowRobotValue = document.getElementById('escrowRobotValue');
+            escrowPrimaryRow = document.getElementById('escrowPrimaryRow');
+            escrowPrimaryActionBtn = document.getElementById('escrowPrimaryActionBtn');
+            escrowPrimaryHint = document.getElementById('escrowPrimaryHint');
+            escrowActionSummary = document.getElementById('escrowActionSummary');
+            escrowMoreToggle = document.getElementById('escrowMoreToggle');
+            escrowActionsGroup = document.getElementById('escrowActionsGroup');
+            escrowCompleteBtn = document.getElementById('escrowCompleteBtn');
+            escrowCancelBtn = document.getElementById('escrowCancelBtn');
+            escrowCancelLabel = document.getElementById('escrowCancelLabel');
+            escrowCancelHelp = document.getElementById('escrowCancelHelp');
+            escrowDisputeBtn = document.getElementById('escrowDisputeBtn');
+            escrowClaimBtn = document.getElementById('escrowClaimBtn');
+            escrowCloseBtn = document.getElementById('escrowCloseBtn');
+            escrowRefreshBtn = document.getElementById('escrowRefreshBtn');
+            escrowOpenDashboardBtn = document.getElementById('escrowOpenDashboard');
+            escrowNetworkAlert = document.getElementById('escrowNetworkAlert');
+            escrowNetworkAlertText = document.getElementById('escrowNetworkAlertText');
+            escrowBalanceAlert = document.getElementById('escrowBalanceAlert');
+            escrowBalanceAlertText = document.getElementById('escrowBalanceAlertText');
+            historyToggleBtn = document.getElementById('marketplaceHistoryToggle');
+            escrowStatusFilterEl = document.getElementById('marketplaceEscrowStatus');
             robotsGrid = document.getElementById('robotsGrid');
             gridToggleBtns = document.querySelectorAll('.marketplace-grid-btn');
             marketplaceEmpty = document.getElementById('marketplaceEmpty');
@@ -1281,11 +2585,13 @@
             sortSelect = document.getElementById('marketplaceSort');
             viewAllBtn = document.getElementById('marketplaceViewAll');
             viewMineBtn = document.getElementById('marketplaceViewMine');
+            viewEscrowsBtn = document.getElementById('marketplaceViewEscrows');
             marketplaceSentinel = document.getElementById('marketplaceSentinel');
             walletModal = document.getElementById('walletModal');
             walletModalOverlay = document.getElementById('walletModalOverlay');
             robotAddedModal = document.getElementById('robotAddedModal');
             robotErrorModal = document.getElementById('robotErrorModal');
+            syncEscrowsBtn = document.getElementById('marketplaceSyncEscrows');
 
             const params = new URLSearchParams(window.location.search);
             if (seedRobotsBtn && import.meta.env.DEV && (params.has('seed') || params.has('admin'))) {
@@ -1301,6 +2607,8 @@
                 openDeleteModalById,
                 openRentModalById,
                 openRentModal,
+                openEscrowModalById,
+                getEscrowForRobot: (robotId) => escrowsByRobotId.get(String(robotId)),
                 updateEmptyState,
                 log
             });
@@ -1313,12 +2621,17 @@
             loadRobotsFromDB({ reset: true }).then(async () => {
                 // Refresh ownership UI after robots are loaded
                 cardRenderer.refreshOwnershipUI();
+                const wallet = getConnectedWallet();
+                if (wallet) {
+                    await loadEscrowsForWallet(wallet);
+                }
                 await maybeSeedRobots();
             });
 
             setupFilters();
             setupSearchAndSort();
             setupViewToggle();
+            setupEscrowStatusFilter();
             const { resetAddRobotForm: resetForm } = initRobotForm({
                 addRobotForm,
                 addRobotModal,
@@ -1352,13 +2665,31 @@
             window.addEventListener('wallet-connected', () => {
                 log.debug('[Marketplace]', 'wallet-connected event received');
                 cardRenderer.refreshOwnershipUI();
-                applyFiltersAndSort();
+                clearEscrows();
+                if (currentEscrowContext) {
+                    updateEscrowUI(currentEscrowContext);
+                    void updateEscrowWarnings(currentEscrowContext);
+                }
+                const wallet = getConnectedWallet();
+                if (wallet) {
+                    loadEscrowsForWallet(wallet).then(() => {
+                        applyFiltersAndSort();
+                    });
+                } else {
+                    applyFiltersAndSort();
+                }
             });
 
             window.addEventListener('wallet-disconnected', () => {
                 log.debug('[Marketplace]', 'wallet-disconnected event received');
                 cardRenderer.refreshOwnershipUI();
-                if (viewMode === 'mine') {
+                clearEscrows();
+                stopEscrowAutoRefresh();
+                if (currentEscrowContext) {
+                    updateEscrowUI(currentEscrowContext);
+                    resetEscrowAlerts();
+                }
+                if (viewMode === 'mine' || viewMode === 'escrows') {
                     setViewMode('all');
                 } else {
                     applyFiltersAndSort();

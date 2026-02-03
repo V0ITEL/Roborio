@@ -79,7 +79,7 @@
           "name": "How do payments work?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "For MVP pilots, payments are coordinated directly with verified operators after you reserve a slot. Escrow automation is planned for later phases as we expand the marketplace."
+            "text": "Payments are handled via on-chain escrow on Solana. Funds are locked until the task is completed, with transparent release and cancellation rules."
           }
         },
         {
