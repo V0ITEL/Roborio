@@ -1,13 +1,26 @@
 'use strict';
 
-import { getWalletJWT } from '../../wallet.js';
-import { safeInsert, safeUpdate, safeDelete, safeUpload, safeStorageDelete } from '../../utils/safeSupabase.js';
+import { getWalletJWT, getFullWalletAddress } from '../../wallet.js';
+import { safeInsert, safeUpdate, safeDelete, safeUpload, safeStorageDelete, safeSelect } from '../../utils/safeSupabase.js';
 import { log } from '../../utils/logger.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 let supabase = null;
+
+/**
+ * Validate Solana wallet address format
+ * Solana addresses are Base58-encoded, typically 32-44 characters
+ * @param {string} wallet - Wallet address to validate
+ * @returns {boolean} - True if valid format
+ */
+function isValidSolanaAddress(wallet) {
+    if (!wallet || typeof wallet !== 'string') return false;
+    // Base58 alphabet (no 0, O, I, l)
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    return base58Regex.test(wallet);
+}
 
 export function getSupabase() {
     return supabase;
@@ -236,6 +249,92 @@ export async function deleteRobotFromDB(robotId) {
         return { success: true };
     } catch (err) {
         log.error('[Marketplace]', 'Error deleting robot:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+export async function upsertEscrowToDB(escrowData) {
+    if (!supabase) {
+        log.info('[Marketplace]', 'Demo mode: Escrow not saved to DB');
+        return { success: true, data: escrowData };
+    }
+
+    const jwt = getWalletJWT();
+    if (!jwt) {
+        return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
+    }
+
+    try {
+        const updated = await safeUpdate(
+            supabase
+                .from('escrows')
+                .update(escrowData)
+                .eq('escrow_pda', escrowData.escrow_pda)
+                .select(),
+            'Failed to update escrow'
+        );
+
+        if (Array.isArray(updated) && updated.length > 0) {
+            return { success: true, data: updated[0] };
+        }
+        const connectedWallet = getFullWalletAddress();
+        if (connectedWallet && escrowData?.renter_wallet && connectedWallet !== escrowData.renter_wallet) {
+            log.warn('[Marketplace]', 'Escrow row missing for operator, skipping insert');
+            return { success: true, data: escrowData };
+        }
+
+        const data = await safeInsert(
+            supabase
+                .from('escrows')
+                .upsert([escrowData], { onConflict: 'escrow_pda' })
+                .select()
+                .single(),
+            'Failed to save escrow'
+        );
+        return { success: true, data };
+    } catch (err) {
+        log.error('[Marketplace]', 'Error saving escrow:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+/**
+ * Fetch escrows for a specific wallet
+ *
+ * SECURITY NOTE: Wallet address is interpolated into the Supabase query string.
+ * While Supabase PostgREST parameterizes queries internally, we validate the
+ * wallet address format to prevent potential issues if this pattern is copied elsewhere.
+ */
+export async function fetchEscrowsForWallet(wallet, network) {
+    if (!supabase) {
+        log.info('[Marketplace]', 'Demo mode: Escrows not loaded from DB');
+        return { success: true, data: [] };
+    }
+
+    const jwt = getWalletJWT();
+    if (!jwt) {
+        return { success: false, error: 'Not authenticated. Please reconnect wallet.' };
+    }
+
+    // Validate wallet address format
+    if (!isValidSolanaAddress(wallet)) {
+        log.error('[Marketplace]', 'Invalid wallet address format:', wallet);
+        return { success: false, error: 'Invalid wallet address format' };
+    }
+
+    try {
+        const data = await safeSelect(
+            supabase
+                .from('escrows')
+                .select('*')
+                .eq('network', network)
+                .or(`renter_wallet.eq.${wallet},operator_wallet.eq.${wallet}`)
+                .order('updated_at', { ascending: false }),
+            'Failed to load escrows'
+        );
+        return { success: true, data };
+    } catch (err) {
+        log.error('[Marketplace]', 'Error loading escrows:', err);
         return { success: false, error: err.message };
     }
 }

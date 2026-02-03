@@ -4,6 +4,7 @@ import { getCurrentLang } from './i18n.js';
 import { log } from './utils/logger.js';
 import notify from './ui/notify.js';
 import { withLoading } from './ui/withLoading.js';
+import * as solanaWeb3 from '@solana/web3.js';
 
 
 
@@ -48,7 +49,9 @@ let walletState = {
     publicKey: null,
     balance: 0,
     provider: null,
-    jwt: null // JWT token for authenticated requests
+    jwt: null, // JWT token for authenticated requests
+    network: null,
+    networkSource: null
 };
 
 // LocalStorage keys for JWT persistence
@@ -56,15 +59,53 @@ const LS_JWT_KEY = 'wallet_jwt';
 const LS_WALLET_KEY = 'wallet_authed_wallet';
 const LS_EXPIRES_KEY = 'wallet_jwt_expires_at';
 const LS_PREFERRED_WALLET_KEY = 'wallet_preferred_wallet';
+const LS_WALLET_NETWORK_KEY = 'wallet_active_network';
+const LS_WALLET_NETWORK_SOURCE_KEY = 'wallet_active_network_source';
+const LS_WALLET_NETWORK_WALLET_KEY = 'wallet_active_network_wallet';
 
 // Supabase Edge Function URL for wallet auth
 const WALLET_AUTH_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1/wallet-auth';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const WALLET_NETWORK = import.meta.env.VITE_SOLANA_NETWORK || 'devnet';
+const WALLET_RPC_ENDPOINT = import.meta.env.VITE_SOLANA_RPC_ENDPOINT || '';
+
+function getWalletRpcEndpoint() {
+    const override = window.ROBORIO_ESCROW_CONFIG || {};
+    const network = override.network || WALLET_NETWORK;
+    const rpcEndpoint = override.rpcEndpoint || WALLET_RPC_ENDPOINT;
+    if (rpcEndpoint) return rpcEndpoint;
+    const cluster = network === 'mainnet' ? 'mainnet-beta' : network;
+    if (cluster === 'mainnet-beta') return 'https://api.mainnet-beta.solana.com';
+    if (cluster === 'testnet') return 'https://api.testnet.solana.com';
+    return 'https://api.devnet.solana.com';
+}
 
 /**
  * Save JWT to localStorage and memory
+ *
+ * SECURITY NOTE: JWT tokens are stored in localStorage, which is accessible to any
+ * JavaScript code on the page. This creates an XSS risk if malicious code is injected.
+ *
+ * Current mitigations:
+ * - Strict Content Security Policy (CSP) prevents inline scripts
+ * - Token expiration with automatic cleanup
+ * - No sensitive operations without wallet signature verification
+ *
+ * TODO: Migrate to httpOnly cookies via Supabase Edge Functions for stronger security.
+ * See: https://supabase.com/docs/guides/auth/server-side/nextjs
  */
 function saveJWT(token, wallet, expiresIn) {
+    // Validate inputs
+    if (!token || typeof token !== 'string' || token.length < 20) {
+        log.error('[Wallet]', 'Invalid JWT token provided');
+        return;
+    }
+
+    if (!wallet || typeof wallet !== 'string') {
+        log.error('[Wallet]', 'Invalid wallet address provided');
+        return;
+    }
+
     const expiresAt = Date.now() + (expiresIn * 1000);
 
     // Save to memory
@@ -125,12 +166,22 @@ async function authenticateWallet(provider, publicKey) {
         const origin = window.location.origin;
         const message = `Sign in to Roborio\n\nOrigin: ${origin}\nNonce: ${nonce}\nTimestamp: ${timestamp}`;
 
-        // Request signature from wallet
+        // Request signature from wallet (compat for different wallets)
         const encodedMessage = new TextEncoder().encode(message);
-        const signedMessage = await provider.signMessage(encodedMessage, 'utf8');
+        let signedMessage = null;
+        try {
+            signedMessage = await provider.signMessage(encodedMessage, 'utf8');
+        } catch (error) {
+            try {
+                signedMessage = await provider.signMessage(encodedMessage);
+            } catch (fallbackError) {
+                signedMessage = await provider.signMessage(message);
+            }
+        }
 
         // Convert signature to base64
-        const signature = btoa(String.fromCharCode(...signedMessage.signature));
+        const signatureBytes = signedMessage?.signature || signedMessage;
+        const signature = btoa(String.fromCharCode(...signatureBytes));
 
         // Send to edge function for verification
         const response = await fetch(WALLET_AUTH_URL, {
@@ -234,6 +285,315 @@ function getPreferredWallet() {
     return localStorage.getItem(LS_PREFERRED_WALLET_KEY);
 }
 
+function normalizeNetwork(value) {
+    if (!value) return null;
+    const text = String(value).toLowerCase();
+    if (text.includes('devnet')) return 'devnet';
+    if (text.includes('testnet')) return 'testnet';
+    if (text.includes('mainnet')) return 'mainnet';
+    return text;
+}
+
+function formatNetworkLabel(value) {
+    const normalized = normalizeNetwork(value);
+    if (normalized === 'mainnet') return 'mainnet';
+    if (normalized === 'testnet') return 'testnet';
+    if (normalized === 'devnet') return 'devnet';
+    return normalized || 'unknown';
+}
+
+function getSiteNetwork() {
+    const override = window.ROBORIO_ESCROW_CONFIG || {};
+    const network = override.network || WALLET_NETWORK;
+    return formatNetworkLabel(network);
+}
+
+function getClusterEndpoint(cluster) {
+    if (cluster === 'mainnet') return 'https://api.mainnet-beta.solana.com';
+    if (cluster === 'testnet') return 'https://api.testnet.solana.com';
+    return 'https://api.devnet.solana.com';
+}
+
+const GENESIS_HASH_CACHE = {
+    devnet: null,
+    testnet: null,
+    mainnet: null,
+    promise: null
+};
+const NETWORK_INFER_CACHE = {
+    value: null,
+    publicKey: null,
+    expiresAt: 0
+};
+const SITE_INFER_CACHE = {
+    value: null,
+    publicKey: null,
+    site: null,
+    expiresAt: 0
+};
+const SAFE_GET_LOGGED = new Set();
+
+async function loadGenesisHashMap() {
+    if (GENESIS_HASH_CACHE.promise) return GENESIS_HASH_CACHE.promise;
+    GENESIS_HASH_CACHE.promise = (async () => {
+        const clusters = ['devnet', 'testnet', 'mainnet'];
+        const web3 = getWeb3();
+        if (!web3?.Connection) return GENESIS_HASH_CACHE;
+        await Promise.all(clusters.map(async (cluster) => {
+            try {
+                const connection = new web3.Connection(getClusterEndpoint(cluster), 'confirmed');
+                const hash = await connection.getGenesisHash();
+                GENESIS_HASH_CACHE[cluster] = hash;
+            } catch (error) {
+                log.warn('[Wallet]', 'Failed to load genesis hash for', cluster, error);
+            }
+        }));
+        return GENESIS_HASH_CACHE;
+    })();
+    return GENESIS_HASH_CACHE.promise;
+}
+
+async function inferNetworkFromBalances(publicKey) {
+    const web3 = getWeb3();
+    if (!publicKey || !web3?.Connection) return null;
+    const keyStr = publicKey?.toString ? publicKey.toString() : String(publicKey);
+    if (!keyStr) return null;
+    if (NETWORK_INFER_CACHE.value
+        && NETWORK_INFER_CACHE.publicKey === keyStr
+        && NETWORK_INFER_CACHE.expiresAt > Date.now()) {
+        return NETWORK_INFER_CACHE.value;
+    }
+    let key;
+    try {
+        key = publicKey?.toBytes ? publicKey : new web3.PublicKey(keyStr);
+    } catch (error) {
+        return null;
+    }
+    const clusters = ['devnet', 'testnet', 'mainnet'];
+    const results = await Promise.all(clusters.map(async (cluster) => {
+        try {
+            const connection = new web3.Connection(getClusterEndpoint(cluster), 'confirmed');
+            const balance = await connection.getBalance(key);
+            return { cluster, balance };
+        } catch (error) {
+            return { cluster, balance: 0 };
+        }
+    }));
+    const best = results.reduce((acc, entry) => {
+        if (!acc || entry.balance > acc.balance) return entry;
+        return acc;
+    }, null);
+    if (best && best.balance > 0) {
+        NETWORK_INFER_CACHE.value = best.cluster;
+        NETWORK_INFER_CACHE.publicKey = keyStr;
+        NETWORK_INFER_CACHE.expiresAt = Date.now() + 60000;
+        return best.cluster;
+    }
+    return null;
+}
+
+function getWeb3() {
+    return window.solanaWeb3 || solanaWeb3;
+}
+
+async function inferNetworkFromSiteBalance(publicKey) {
+    const web3 = getWeb3();
+    if (!publicKey || !web3?.Connection) return null;
+    const site = getSiteNetwork();
+    if (!site) return null;
+    const keyStr = publicKey?.toString ? publicKey.toString() : String(publicKey);
+    if (SITE_INFER_CACHE.value
+        && SITE_INFER_CACHE.publicKey === keyStr
+        && SITE_INFER_CACHE.site === site
+        && SITE_INFER_CACHE.expiresAt > Date.now()) {
+        return SITE_INFER_CACHE.value;
+    }
+    let key;
+    try {
+        key = publicKey?.toBytes ? publicKey : new web3.PublicKey(publicKey.toString());
+    } catch (error) {
+        return null;
+    }
+    try {
+        const connection = new web3.Connection(getClusterEndpoint(site), 'confirmed');
+        const balance = await connection.getBalance(key);
+        const result = balance > 0 ? site : null;
+        SITE_INFER_CACHE.value = result;
+        SITE_INFER_CACHE.publicKey = keyStr;
+        SITE_INFER_CACHE.site = site;
+        SITE_INFER_CACHE.expiresAt = Date.now() + 60000;
+        return result;
+    } catch (error) {
+        return null;
+    }
+}
+
+function getCachedNetworkForWallet(publicKey) {
+    if (!publicKey) return null;
+    const cached = localStorage.getItem(LS_WALLET_NETWORK_KEY);
+    const cachedWallet = localStorage.getItem(LS_WALLET_NETWORK_WALLET_KEY);
+    const keyStr = publicKey?.toString ? publicKey.toString() : String(publicKey);
+    if (cached && cachedWallet && cachedWallet === keyStr) {
+        return cached;
+    }
+    return null;
+}
+
+function safeGet(label, getter) {
+    try {
+        return getter();
+    } catch (error) {
+        if (!SAFE_GET_LOGGED.has(label)) {
+            SAFE_GET_LOGGED.add(label);
+            log.debug('[Wallet]', `safeGet failed for ${label}:`, error?.message || error);
+        }
+        return null;
+    }
+}
+
+function getProviderEndpoint(provider) {
+    return safeGet('connection.rpcEndpoint', () => provider?.connection?.rpcEndpoint)
+        || safeGet('connection._rpcEndpoint', () => provider?.connection?._rpcEndpoint)
+        || safeGet('_connection.rpcEndpoint', () => provider?._connection?.rpcEndpoint)
+        || safeGet('_connection._rpcEndpoint', () => provider?._connection?._rpcEndpoint)
+        || safeGet('adapter.connection.rpcEndpoint', () => provider?.adapter?.connection?.rpcEndpoint)
+        || safeGet('adapter.connection._rpcEndpoint', () => provider?.adapter?.connection?._rpcEndpoint)
+        || safeGet('wallet.adapter.connection.rpcEndpoint', () => provider?.wallet?.adapter?.connection?.rpcEndpoint)
+        || safeGet('wallet.adapter.connection._rpcEndpoint', () => provider?.wallet?.adapter?.connection?._rpcEndpoint)
+        || safeGet('rpcEndpoint', () => provider?.rpcEndpoint)
+        || safeGet('endpoint', () => provider?.endpoint)
+        || safeGet('rpc.endpoint', () => provider?.rpc?.endpoint)
+        || safeGet('rpc.rpcEndpoint', () => provider?.rpc?.rpcEndpoint)
+        || null;
+}
+
+async function detectWalletNetwork(provider) {
+    const direct = safeGet('network', () => provider?.network)
+        || safeGet('connection.network', () => provider?.connection?.network)
+        || safeGet('_connection.network', () => provider?._connection?.network)
+        || safeGet('adapter.connection.network', () => provider?.adapter?.connection?.network)
+        || null;
+    const endpoint = getProviderEndpoint(provider);
+    const normalized = normalizeNetwork(direct || endpoint);
+    if (normalized) return normalized;
+
+    const web3 = getWeb3();
+    if (endpoint && web3?.Connection) {
+        try {
+            const connection = new web3.Connection(endpoint, 'confirmed');
+            const walletGenesis = await connection.getGenesisHash();
+            if (walletGenesis) {
+                const map = await loadGenesisHashMap();
+                const match = ['devnet', 'testnet', 'mainnet']
+                    .find((cluster) => map[cluster] === walletGenesis);
+                if (match) return match;
+            }
+        } catch (error) {
+            log.debug('[Wallet]', 'Network detect via endpoint failed:', error?.message || error);
+        }
+    }
+
+    if (provider?.request) {
+        try {
+            const walletGenesis = await provider.request({ method: 'getGenesisHash' });
+            if (walletGenesis) {
+                const map = await loadGenesisHashMap();
+                const match = ['devnet', 'testnet', 'mainnet']
+                    .find((cluster) => map[cluster] === walletGenesis);
+                if (match) return match;
+            }
+        } catch (error) {
+            try {
+                const walletGenesis = await provider.request({ method: 'getGenesisHash', params: [] });
+                if (walletGenesis) {
+                    const map = await loadGenesisHashMap();
+                    const match = ['devnet', 'testnet', 'mainnet']
+                        .find((cluster) => map[cluster] === walletGenesis);
+                    if (match) return match;
+                }
+            } catch (fallbackError) {
+                log.debug('[Wallet]', 'Network request not available:', fallbackError?.message || fallbackError);
+            }
+        }
+    }
+    return null;
+}
+
+function updateNetworkBadge() {
+    const badge = document.getElementById('activeNetworkBadge');
+    const badgeMobile = document.getElementById('activeNetworkBadgeMobile');
+    const site = getSiteNetwork();
+    const walletNetwork = walletState.network || getCachedNetworkForWallet(walletState.publicKey);
+    const walletSource = walletState.networkSource || localStorage.getItem(LS_WALLET_NETWORK_SOURCE_KEY);
+    const assumed = walletSource === 'inferred';
+    let text = `Network: ${site}`;
+    let state = 'unknown';
+
+    if (walletState.connected && walletNetwork) {
+        const walletLabel = formatNetworkLabel(walletNetwork);
+        if (walletLabel === site) {
+            text = `Network: ${site}${assumed ? ' (assumed)' : ''}`;
+            state = 'match';
+        } else {
+            text = `Wallet: ${walletLabel}${assumed ? ' (assumed)' : ''} | Site: ${site}`;
+            state = 'mismatch';
+        }
+    } else {
+        text = `Site: ${site}`;
+        state = 'unknown';
+    }
+
+    [badge, badgeMobile].forEach((el) => {
+        if (!el) return;
+        el.textContent = text;
+        el.dataset.state = state;
+    });
+}
+
+async function refreshWalletNetwork(provider) {
+    if (!provider) {
+        walletState.network = null;
+        walletState.networkSource = null;
+        localStorage.removeItem(LS_WALLET_NETWORK_KEY);
+        localStorage.removeItem(LS_WALLET_NETWORK_SOURCE_KEY);
+        localStorage.removeItem(LS_WALLET_NETWORK_WALLET_KEY);
+        updateNetworkBadge();
+        return;
+    }
+    let detected = await detectWalletNetwork(provider);
+    let source = detected ? 'detected' : null;
+    if (!detected && walletState.publicKey) {
+        const siteGuess = await inferNetworkFromSiteBalance(walletState.publicKey);
+        if (siteGuess) {
+            detected = siteGuess;
+            source = 'inferred';
+        }
+    }
+    if (!detected && walletState.publicKey) {
+        const inferred = await inferNetworkFromBalances(walletState.publicKey);
+        if (inferred) {
+            detected = inferred;
+            source = 'inferred';
+        }
+    }
+    walletState.network = detected;
+    walletState.networkSource = source;
+    if (detected) {
+        localStorage.setItem(LS_WALLET_NETWORK_KEY, detected);
+        localStorage.setItem(LS_WALLET_NETWORK_WALLET_KEY, walletState.publicKey?.toString?.() || '');
+        if (source) {
+            localStorage.setItem(LS_WALLET_NETWORK_SOURCE_KEY, source);
+        } else {
+            localStorage.removeItem(LS_WALLET_NETWORK_SOURCE_KEY);
+        }
+    } else {
+        localStorage.removeItem(LS_WALLET_NETWORK_KEY);
+        localStorage.removeItem(LS_WALLET_NETWORK_SOURCE_KEY);
+        localStorage.removeItem(LS_WALLET_NETWORK_WALLET_KEY);
+    }
+    updateNetworkBadge();
+}
+
 export function initWallet() {
     const connectBtn = document.getElementById('connectWallet');
     const connectBtnMobile = document.getElementById('connectWalletMobile');
@@ -249,6 +609,16 @@ export function initWallet() {
     const buyModalOverlay = document.getElementById('buyModalOverlay');
     const buyModalClose = document.getElementById('buyModalClose');
     const buyWaitlistBtn = document.getElementById('buyWaitlistBtn');
+
+    updateNetworkBadge();
+
+    const refreshNetworkStatus = async () => {
+        if (walletState.provider) {
+            await refreshWalletNetwork(walletState.provider);
+        } else {
+            updateNetworkBadge();
+        }
+    };
 
     // Open wallet modal
     function openWalletModal() {
@@ -485,6 +855,7 @@ export function initWallet() {
             const usdValue = walletState.balance * 180;
             balanceUsdEl.textContent = '~ $' + usdValue.toFixed(2);
         }
+        updateNetworkBadge();
     }
 
     // Connect to Phantom
@@ -499,21 +870,22 @@ export function initWallet() {
 
             const response = await provider.connect();
             walletState.publicKey = response.publicKey.toString();
-            walletState.connected = true;
             walletState.provider = provider;
 
-            // Authenticate and get JWT
+            // Authenticate and get JWT (required)
             const jwt = await authenticateWallet(provider, walletState.publicKey);
-            if (jwt) {
-                walletState.jwt = jwt;
-            } else {
-                log.warn('[Wallet]', 'JWT auth failed, continuing without token');
+            if (!jwt) {
+                notify.error('Signature required to connect. Please try again.');
+                disconnectWallet({ clearPreferred: true });
+                return;
             }
+            walletState.jwt = jwt;
+            walletState.connected = true;
 
             // Get balance
             try {
-                const connection = new (window.solanaWeb3?.Connection || class{})(
-                    'https://api.mainnet-beta.solana.com',
+                const connection = new (getWeb3()?.Connection || class{})(
+                    getWalletRpcEndpoint(),
                     'confirmed'
                 );
                 const balance = await connection.getBalance(response.publicKey);
@@ -521,6 +893,8 @@ export function initWallet() {
             } catch (e) {
                 walletState.balance = 0;
             }
+
+            await refreshWalletNetwork(provider);
 
             closeWalletModal();
             updateWalletUI();
@@ -570,14 +944,30 @@ export function initWallet() {
 
             await provider.connect();
             walletState.publicKey = provider.publicKey.toString();
-            walletState.connected = true;
             walletState.provider = provider;
 
-            // Authenticate and get JWT
+            // Authenticate and get JWT (required)
             const jwt = await authenticateWallet(provider, walletState.publicKey);
-            if (jwt) {
-                walletState.jwt = jwt;
+            if (!jwt) {
+                notify.error('Signature required to connect. Please try again.');
+                disconnectWallet({ clearPreferred: true });
+                return;
             }
+            walletState.jwt = jwt;
+            walletState.connected = true;
+
+            try {
+                const connection = new (getWeb3()?.Connection || class{})(
+                    getWalletRpcEndpoint(),
+                    'confirmed'
+                );
+                const balance = await connection.getBalance(provider.publicKey);
+                walletState.balance = balance / 1e9;
+            } catch (e) {
+                walletState.balance = 0;
+            }
+
+            await refreshWalletNetwork(provider);
 
             closeWalletModal();
             updateWalletUI();
@@ -605,14 +995,30 @@ export function initWallet() {
 
             await provider.connect();
             walletState.publicKey = provider.publicKey.toString();
-            walletState.connected = true;
             walletState.provider = provider;
 
-            // Authenticate and get JWT
+            // Authenticate and get JWT (required)
             const jwt = await authenticateWallet(provider, walletState.publicKey);
-            if (jwt) {
-                walletState.jwt = jwt;
+            if (!jwt) {
+                notify.error('Signature required to connect. Please try again.');
+                disconnectWallet({ clearPreferred: true });
+                return;
             }
+            walletState.jwt = jwt;
+            walletState.connected = true;
+
+            try {
+                const connection = new (getWeb3()?.Connection || class{})(
+                    getWalletRpcEndpoint(),
+                    'confirmed'
+                );
+                const balance = await connection.getBalance(provider.publicKey);
+                walletState.balance = balance / 1e9;
+            } catch (e) {
+                walletState.balance = 0;
+            }
+
+            await refreshWalletNetwork(provider);
 
             closeWalletModal();
             updateWalletUI();
@@ -645,8 +1051,13 @@ export function initWallet() {
             publicKey: null,
             balance: 0,
             provider: null,
-            jwt: null
+            jwt: null,
+            network: null,
+            networkSource: null
         };
+        localStorage.removeItem(LS_WALLET_NETWORK_KEY);
+        localStorage.removeItem(LS_WALLET_NETWORK_SOURCE_KEY);
+        localStorage.removeItem(LS_WALLET_NETWORK_WALLET_KEY);
 
         closeWalletDropdown();
         updateWalletUI();
@@ -703,6 +1114,19 @@ export function initWallet() {
         }
     });
 
+    // Refresh network badge periodically and on focus
+    setInterval(() => {
+        if (walletState.connected) {
+            refreshNetworkStatus();
+        }
+    }, 15000);
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            refreshNetworkStatus();
+        }
+    });
+
     // Auto-connect if previously trusted (silent reconnect on page refresh)
     const autoConnectWallet = async () => {
         try {
@@ -720,8 +1144,8 @@ export function initWallet() {
 
             // Get balance
             try {
-                const connection = new (window.solanaWeb3?.Connection || class{})(
-                    'https://api.mainnet-beta.solana.com',
+                const connection = new (getWeb3()?.Connection || class{})(
+                    getWalletRpcEndpoint(),
                     'confirmed'
                 );
                 const balance = await connection.getBalance(publicKey);
@@ -729,6 +1153,8 @@ export function initWallet() {
             } catch (e) {
                 walletState.balance = 0;
             }
+
+            await refreshWalletNetwork(provider);
 
             updateWalletUI();
 
@@ -770,4 +1196,11 @@ export function initWallet() {
 // Export function to get full wallet address (for ownership checks)
 export function getFullWalletAddress() {
     return walletState.publicKey;
+}
+
+export function getConnectedWalletProvider() {
+    if (!walletState.connected) {
+        return null;
+    }
+    return walletState.provider || null;
 }
