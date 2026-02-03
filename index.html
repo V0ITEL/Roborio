@@ -10,7 +10,7 @@
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
 
     <!-- Content Security Policy  -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.solana.com https://api.mainnet-beta.solana.com https://api.devnet.solana.com https://terminal.jup.ag https://*.supabase.co https://cdn.jsdelivr.net; frame-src 'self' https://terminal.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.solana.com https://api.mainnet-beta.solana.com https://api.devnet.solana.com wss://api.mainnet-beta.solana.com wss://api.devnet.solana.com https://rpc.ankr.com wss://rpc.ankr.com https://terminal.jup.ag https://*.supabase.co https://cdn.jsdelivr.net https://*.xnftdata.com wss://*.xnftdata.com; frame-src 'self' https://terminal.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
 
     <!-- Resource Hints for Performance -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -193,6 +193,13 @@
                     </svg>
                     <span data-i18n="connectWallet">Connect Wallet</span>
                 </button>
+                <span class="network-badge-wrap">
+                    <span class="network-badge" id="activeNetworkBadge" data-state="unknown">Network: --</span>
+                    <button class="network-info" type="button" title="Network detection information">
+                        i
+                        <span class="network-tooltip" role="tooltip">We detect the wallet network via wallet metadata, RPC endpoint/genesis hash, or by checking balance on the site network.</span>
+                    </button>
+                </span>
                 <a href="docs.html" class="btn btn-secondary" data-i18n="viewDocs">VIEW DOCS</a>
             </div>
 
@@ -230,6 +237,13 @@
                 </svg>
                 <span data-i18n="connectWallet">Connect Wallet</span>
             </button>
+            <span class="network-badge-wrap">
+                <span class="network-badge" id="activeNetworkBadgeMobile" data-state="unknown">Network: --</span>
+                <button class="network-info" type="button" title="Network detection information">
+                    i
+                    <span class="network-tooltip" role="tooltip">We detect the wallet network via wallet metadata, RPC endpoint/genesis hash, or by checking balance on the site network.</span>
+                </button>
+            </span>
             <a href="docs.html" class="btn btn-secondary" data-i18n="viewDocs">View Docs</a>
         </div>
         <div class="mobile-menu-social">
@@ -396,6 +410,7 @@
                         <div class="marketplace-view-toggle" role="group" aria-label="Marketplace view">
                             <button class="marketplace-view-btn active" id="marketplaceViewAll" type="button" data-i18n="marketplaceViewAll">All Robots</button>
                             <button class="marketplace-view-btn" id="marketplaceViewMine" type="button" data-i18n="marketplaceViewMine">My Robots</button>
+                            <button class="marketplace-view-btn" id="marketplaceViewEscrows" type="button" data-i18n="marketplaceViewEscrows">My Escrows</button>
                         </div>
                         <div class="marketplace-grid-toggle" role="group" aria-label="Marketplace grid">
                             <button class="marketplace-grid-btn active" type="button" data-grid="2" aria-label="Grid 2x1">
@@ -421,6 +436,8 @@
                                 <span class="grid-label visually-hidden">1x1</span>
                             </button>
                         </div>
+                        <button class="marketplace-history-btn is-hidden" id="marketplaceHistoryToggle" type="button">History: Off</button>
+                        <button class="marketplace-sync-btn" id="marketplaceSyncEscrows" type="button">Sync Escrows</button>
                     </div>
                     <button class="btn-add-robot btn-add-robot--compact marketplace-cta-mobile" id="addRobotToolbarBtn">
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -429,6 +446,16 @@
                             <span class="btn-add-robot__meta">Earn in SOL</span>
                         </span>
                     </button>
+                </div>
+
+                <div class="escrow-status-filter is-hidden" id="marketplaceEscrowStatus">
+                    <span class="escrow-status-label">Escrow status</span>
+                    <div class="escrow-status-toggle" role="group" aria-label="Escrow status filter">
+                        <button class="escrow-status-btn active" type="button" data-status="active">Active</button>
+                        <button class="escrow-status-btn" type="button" data-status="completed">Completed</button>
+                        <button class="escrow-status-btn" type="button" data-status="cancelled">Cancelled</button>
+                        <button class="escrow-status-btn" type="button" data-status="expired">Expired</button>
+                    </div>
                 </div>
 
                 <!-- Category Filter -->
@@ -833,14 +860,125 @@
             <h3 class="mp-modal-title" id="successModalTitle">Payment Successful!</h3>
             <p class="mp-modal-subtitle">Funds are now held in escrow</p>
 
-            <div class="operator-contact" id="operatorContact">
-                <h4>Operator Contact</h4>
-                <div class="contact-info">
-                    <div class="contact-row">
-                        <span class="contact-value contact-main" id="operatorContactValue">operator@email.com</span>
+            <div class="escrow-next" id="operatorContact">
+                <div class="escrow-next-header">
+                    <div>
+                        <h4>What happens next</h4>
+                        <p class="escrow-next-subtitle">Your payment is secured. Follow the steps below.</p>
                     </div>
                 </div>
-                <p class="contact-note">Contact the operator to arrange robot delivery and task details.</p>
+                <ol class="escrow-steps">
+                    <li class="escrow-step">
+                        <div class="escrow-step-title">Contact the operator</div>
+                        <div class="escrow-step-desc">Arrange delivery and task details.</div>
+                        <span class="escrow-step-chip" id="operatorContactValue">operator@email.com</span>
+                    </li>
+                    <li class="escrow-step">
+                        <div class="escrow-step-title">Track escrow status</div>
+                        <div class="escrow-step-desc">We auto-refresh status while this modal is open.</div>
+                    </li>
+                    <li class="escrow-step">
+                        <div class="escrow-step-title">Finish the job</div>
+                        <div class="escrow-step-desc">Complete to release funds, or cancel before work starts.</div>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="escrow-details is-hidden" id="escrowDetails">
+                <div class="escrow-header">
+                    <div>
+                        <h4>Escrow Receipt</h4>
+                        <p class="escrow-subtitle">Track and manage your on-chain rental.</p>
+                    </div>
+                    <div class="escrow-badges">
+                        <span class="escrow-network-badge" id="escrowNetworkValue">devnet</span>
+                        <span class="escrow-status-badge" id="escrowStatusValue" data-status="pending">Pending</span>
+                        <span class="escrow-closed-badge is-hidden" id="escrowClosedBadge">Closed</span>
+                        <span class="escrow-role-badge" id="escrowRoleValue" data-role="viewer">Access: Viewer</span>
+                    </div>
+                </div>
+                <div class="escrow-grid">
+                    <div class="escrow-item">
+                        <span class="escrow-label">Robot</span>
+                        <span class="escrow-value" id="escrowRobotValue">--</span>
+                    </div>
+                    <div class="escrow-item">
+                        <span class="escrow-label">Amount</span>
+                        <span class="escrow-value" id="escrowAmountValue">--</span>
+                    </div>
+                    <div class="escrow-item">
+                        <span class="escrow-label">Escrow PDA</span>
+                        <a class="escrow-value escrow-mono" id="escrowAddressLink" href="#" target="_blank" rel="noopener noreferrer">--</a>
+                    </div>
+                    <div class="escrow-item">
+                        <span class="escrow-label">Renter</span>
+                        <a class="escrow-value escrow-mono" id="escrowRenterLink" href="#" target="_blank" rel="noopener noreferrer">--</a>
+                    </div>
+                    <div class="escrow-item">
+                        <span class="escrow-label">Operator</span>
+                        <a class="escrow-value escrow-mono" id="escrowOperatorLink" href="#" target="_blank" rel="noopener noreferrer">--</a>
+                    </div>
+                    <div class="escrow-item">
+                        <span class="escrow-label">Expires</span>
+                        <span class="escrow-value" id="escrowExpiresValue">--</span>
+                    </div>
+                    <div class="escrow-item">
+                        <span class="escrow-label">Transaction</span>
+                        <a class="escrow-value" id="escrowTxLink" href="#" target="_blank" rel="noopener noreferrer">--</a>
+                    </div>
+                </div>
+                <div class="escrow-alert escrow-alert--danger is-hidden" id="escrowNetworkAlert">
+                    <span class="escrow-alert-title">Network mismatch</span>
+                    <span class="escrow-alert-text" id="escrowNetworkAlertText">Switch your wallet to the correct network to continue.</span>
+                </div>
+                <div class="escrow-alert escrow-alert--warning is-hidden" id="escrowBalanceAlert">
+                    <span class="escrow-alert-title">Not enough SOL</span>
+                    <span class="escrow-alert-text" id="escrowBalanceAlertText">Fund this wallet to cover network fees.</span>
+                </div>
+                <div class="escrow-actions-panel">
+                    <div class="escrow-actions-header">
+                        <h5>Recommended action</h5>
+                        <p id="escrowActionSummary">Based on your role and escrow status.</p>
+                    </div>
+                    <div class="escrow-primary-row" id="escrowPrimaryRow">
+                        <button type="button" class="btn-primary escrow-primary-action" id="escrowPrimaryActionBtn">Complete</button>
+                        <div class="escrow-primary-meta">
+                            <span class="escrow-primary-hint" id="escrowPrimaryHint">Release funds after the job is done.</span>
+                            <button type="button" class="escrow-more-toggle" id="escrowMoreToggle">Other actions</button>
+                        </div>
+                    </div>
+                    <div class="escrow-actions-group is-collapsed" id="escrowActionsGroup">
+                        <div class="escrow-actions">
+                        <button type="button" class="btn-secondary escrow-action" id="escrowCompleteBtn">
+                            <span class="escrow-action-label">Complete</span>
+                            <span class="escrow-action-help">Release funds after the job is done.</span>
+                        </button>
+                        <button type="button" class="btn-secondary escrow-action" id="escrowCancelBtn">
+                            <span class="escrow-action-label" id="escrowCancelLabel">Cancel</span>
+                            <span class="escrow-action-help" id="escrowCancelHelp">Request cancellation (requires operator approval).</span>
+                        </button>
+                        <button type="button" class="btn-secondary escrow-action" id="escrowDisputeBtn">
+                            <span class="escrow-action-label">Dispute</span>
+                            <span class="escrow-action-help">Dispute the cancellation request.</span>
+                        </button>
+                        <button type="button" class="btn-secondary escrow-action" id="escrowClaimBtn">
+                            <span class="escrow-action-label">Claim Expired</span>
+                            <span class="escrow-action-help">Operator can claim after expiry if not completed.</span>
+                        </button>
+                        <button type="button" class="btn-secondary escrow-action" id="escrowCloseBtn">
+                            <span class="escrow-action-label">Close</span>
+                            <span class="escrow-action-help">Close the escrow account once finished.</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="escrow-actions-footer">
+                    <button type="button" class="btn-secondary escrow-secondary-action" id="escrowOpenDashboard">Open My Escrows</button>
+                    <button type="button" class="btn-secondary escrow-secondary-action" id="escrowRefreshBtn">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+                <p class="escrow-hint">Auto refresh runs every 20s while this modal is open.</p>
             </div>
 
             <button type="button" class="btn-primary btn-full" id="closeSuccess">Done</button>

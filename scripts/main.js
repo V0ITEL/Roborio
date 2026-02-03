@@ -119,7 +119,7 @@ const structuredData = [
                 "name": "How do payments work?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "For MVP pilots, payments are coordinated directly with verified operators after you reserve a slot. Escrow automation is planned for later phases as we expand the marketplace."
+                    "text": "Payments are handled via on-chain escrow on Solana. Funds are locked until the task is completed, with transparent release and cancellation rules."
                 }
             },
             {
@@ -714,8 +714,15 @@ async function loadExternalScripts() {
                     }
                 });
             }, { threshold: 0.1 });
-            
+
             matrixObserver.observe(heroSection);
+
+            // Cleanup on page unload to prevent memory leak
+            window.addEventListener('beforeunload', () => {
+                if (matrixObserver) {
+                    matrixObserver.disconnect();
+                }
+            }, { once: true });
 
             // Pause when tab is hidden (Visibility API)
             document.addEventListener('visibilitychange', () => {
@@ -745,17 +752,18 @@ async function loadExternalScripts() {
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function(e) {
                     const href = this.getAttribute('href');
-                    if (href !== '#') {
-                        e.preventDefault();
-                        const target = document.querySelector(href);
-                        if (target) {
-                            target.scrollIntoView({
-                                behavior: 'smooth'
-                            });
-                            // Update focus for accessibility
-                            target.setAttribute('tabindex', '-1');
-                            target.focus({ preventScroll: true });
-                        }
+                    if (!href || href === '#' || !href.startsWith('#')) {
+                        return;
+                    }
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        // Update focus for accessibility
+                        target.setAttribute('tabindex', '-1');
+                        target.focus({ preventScroll: true });
                     }
                 });
             });
@@ -970,7 +978,6 @@ async function loadExternalScripts() {
         const navbar = document.querySelector('.navbar');
         if (!navbar) return;
 
-        let lastScroll = 0;
         const scrollThreshold = 50; // Add class after 50px scroll
 
         const handleScroll = rafThrottle(() => {
@@ -981,8 +988,6 @@ async function loadExternalScripts() {
             } else {
                 navbar.classList.remove('navbar-scrolled');
             }
-
-            lastScroll = currentScroll;
         });
 
         window.addEventListener('scroll', handleScroll, { passive: true });
