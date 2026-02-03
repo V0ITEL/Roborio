@@ -22,6 +22,7 @@ out/
 
 # Rust / Java etc
 target/
+vendor/
 
 # Env / secrets
 .env
@@ -35,3 +36,5 @@ target/
 # Misc
 PROJECT_STATE.md
 .vercel/
+.claude/
+used_keys.txt
