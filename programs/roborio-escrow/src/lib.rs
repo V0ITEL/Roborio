@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
-declare_id!("F8TkJN1QUg3yrGPgVm5aT88HyRY7z6tyakjRRuF1MfPL");
+declare_id!("7B1g1XwsuvyZcniwp2FaKiMyFhicJNo97znvHimmxxcC");
 
 #[program]
 pub mod roborio_escrow {
@@ -15,13 +15,15 @@ pub mod roborio_escrow {
         amount: u64,
         rental_duration_hours: u64,
     ) -> Result<()> {
+        let escrow_key = ctx.accounts.escrow.key();
+        let escrow_account_info = ctx.accounts.escrow.to_account_info();
         let escrow = &mut ctx.accounts.escrow;
         let clock = Clock::get()?;
 
         // Validate inputs
         require!(amount > 0, EscrowError::InvalidAmount);
         require!(rental_duration_hours > 0, EscrowError::InvalidDuration);
-        require!(robot_id.len() <= 64, EscrowError::InvalidRobotId);
+        require!(robot_id.len() > 0 && robot_id.len() <= 64, EscrowError::InvalidRobotId);
 
         // Initialize escrow state
         escrow.renter = ctx.accounts.renter.key();
@@ -29,7 +31,17 @@ pub mod roborio_escrow {
         escrow.robot_id = robot_id;
         escrow.amount = amount;
         escrow.created_at = clock.unix_timestamp;
-        escrow.expires_at = clock.unix_timestamp + (rental_duration_hours as i64 * 3600);
+
+        // Calculate expiry with overflow protection
+        let duration_seconds = rental_duration_hours
+            .checked_mul(3600)
+            .ok_or(EscrowError::InvalidDuration)?;
+        let duration_i64 = i64::try_from(duration_seconds)
+            .map_err(|_| EscrowError::InvalidDuration)?;
+        escrow.expires_at = clock.unix_timestamp
+            .checked_add(duration_i64)
+            .ok_or(EscrowError::InvalidDuration)?;
+
         escrow.status = EscrowStatus::Active;
         escrow.bump = ctx.bumps.escrow;
 
@@ -38,13 +50,13 @@ pub mod roborio_escrow {
             ctx.accounts.system_program.to_account_info(),
             system_program::Transfer {
                 from: ctx.accounts.renter.to_account_info(),
-                to: ctx.accounts.escrow.to_account_info(),
+                to: escrow_account_info,
             },
         );
         system_program::transfer(cpi_context, amount)?;
 
         emit!(RentalCreated {
-            escrow: escrow.key(),
+            escrow: escrow_key,
             renter: escrow.renter,
             operator: escrow.operator,
             robot_id: escrow.robot_id.clone(),
@@ -66,24 +78,27 @@ pub mod roborio_escrow {
 
         // Calculate platform fee (2%)
         let platform_fee = escrow.amount / 50; // 2%
-        let operator_amount = escrow.amount - platform_fee;
 
-        // Transfer funds to operator
+        // Get available funds
         let escrow_lamports = escrow.to_account_info().lamports();
         let rent_exempt = Rent::get()?.minimum_balance(Escrow::SPACE);
         let available = escrow_lamports.saturating_sub(rent_exempt);
 
-        // Transfer to operator
-        **escrow.to_account_info().try_borrow_mut_lamports()? -= operator_amount.min(available);
-        **ctx.accounts.operator.to_account_info().try_borrow_mut_lamports()? += operator_amount.min(available);
-
-        // Transfer platform fee (if platform account provided)
+        // Transfer platform fee first (if platform account provided)
+        let mut remaining = available;
         if let Some(platform) = &ctx.accounts.platform {
-            let fee_to_transfer = platform_fee.min(available.saturating_sub(operator_amount));
+            let fee_to_transfer = platform_fee.min(remaining);
             if fee_to_transfer > 0 {
                 **escrow.to_account_info().try_borrow_mut_lamports()? -= fee_to_transfer;
                 **platform.to_account_info().try_borrow_mut_lamports()? += fee_to_transfer;
+                remaining = remaining.saturating_sub(fee_to_transfer);
             }
+        }
+
+        // Transfer remaining to operator
+        if remaining > 0 {
+            **escrow.to_account_info().try_borrow_mut_lamports()? -= remaining;
+            **ctx.accounts.operator.to_account_info().try_borrow_mut_lamports()? += remaining;
         }
 
         // Update status
@@ -93,7 +108,7 @@ pub mod roborio_escrow {
             escrow: escrow.key(),
             renter: escrow.renter,
             operator: escrow.operator,
-            amount: operator_amount,
+            amount: remaining,
         });
 
         Ok(())
@@ -281,9 +296,8 @@ pub struct ClaimExpired<'info> {
 
 #[derive(Accounts)]
 pub struct CloseEscrow<'info> {
-    /// CHECK: Renter receives rent back
     #[account(mut)]
-    pub renter: UncheckedAccount<'info>,
+    pub renter: Signer<'info>,
 
     #[account(
         mut,

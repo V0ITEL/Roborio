@@ -5,10 +5,11 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-roborio_escrow = "F8TkJN1QUg3yrGPgVm5aT88HyRY7z6tyakjRRuF1MfPL"
+roborio_escrow = "7B1g1XwsuvyZcniwp2FaKiMyFhicJNo97znvHimmxxcC"
 
-[programs.mainnet]
-roborio_escrow = "RoboEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+# [programs.mainnet]
+# roborio_escrow = "RoboEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+# TODO: Replace with actual Program ID after mainnet deployment
 
 [registry]
 url = "https://api.apr.dev"
