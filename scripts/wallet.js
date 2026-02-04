@@ -80,6 +80,16 @@ function getWalletRpcEndpoint() {
     return 'https://api.devnet.solana.com';
 }
 
+function isIOSDevice() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function getPhantomDeepLink(targetUrl) {
+    const url = targetUrl || window.location.href;
+    return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
+}
+
 /**
  * Save JWT to localStorage and memory
  *
@@ -603,6 +613,8 @@ export function initWallet() {
     const walletDropdown = document.getElementById('walletDropdown');
     const walletOptions = document.querySelectorAll('.wallet-option');
     const disconnectBtn = document.getElementById('disconnectWallet');
+    const walletDeeplink = document.getElementById('walletDeeplink');
+    const phantomDeeplink = document.getElementById('phantomDeeplink');
     const openBuyModalBtn = document.getElementById('openBuyModal');
     const buyRoborioHeroBtn = document.getElementById('buyRoborioHero');
     const buyModal = document.getElementById('buyModal');
@@ -620,6 +632,17 @@ export function initWallet() {
         }
     };
 
+    function updateWalletDeeplink() {
+        if (!walletDeeplink || !phantomDeeplink) return;
+        const hasProvider = !!window.phantom?.solana;
+        if (!isIOSDevice() || hasProvider) {
+            walletDeeplink.hidden = true;
+            return;
+        }
+        phantomDeeplink.href = getPhantomDeepLink(window.location.href);
+        walletDeeplink.hidden = false;
+    }
+
     // Open wallet modal
     function openWalletModal() {
         if (walletState.connected) {
@@ -631,6 +654,7 @@ export function initWallet() {
             walletModalOverlay?.setAttribute('aria-hidden', 'false');
             // Focus first wallet option
             walletModal?.querySelector('.wallet-option')?.focus();
+            updateWalletDeeplink();
         }
     }
 
@@ -864,7 +888,11 @@ export function initWallet() {
             const provider = window.phantom?.solana;
 
             if (!provider?.isPhantom) {
-                window.open('https://phantom.app/', '_blank');
+                if (isIOSDevice()) {
+                    window.location.href = getPhantomDeepLink(window.location.href);
+                } else {
+                    window.open('https://phantom.app/', '_blank');
+                }
                 return;
             }
 
@@ -1069,6 +1097,8 @@ export function initWallet() {
     connectBtnMobile?.addEventListener('click', openWalletModal);
     walletModalClose?.addEventListener('click', closeWalletModal);
     walletModalOverlay?.addEventListener('click', closeWalletModal);
+
+    updateWalletDeeplink();
 
     walletOptions?.forEach(option => {
         option.addEventListener('click', async () => {
