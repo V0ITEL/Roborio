@@ -4,10 +4,34 @@ import nacl from "https://esm.sh/tweetnacl@1.0.3";
 import { decode as decodeBase58 } from "https://deno.land/std@0.168.0/encoding/base58.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://roborio.xyz",
+  "https://www.roborio.xyz",
+  /^https:\/\/roborio-.*\.vercel\.app$/,
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
+function isOriginAllowed(origin: string) {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.some((allowed) => {
+    if (allowed instanceof RegExp) return allowed.test(origin);
+    return allowed === origin;
+  });
+}
+
+function buildCorsHeaders(origin: string) {
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+  if (origin && isOriginAllowed(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Vary"] = "Origin";
+  }
+  return headers;
+}
 
 const NONCE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const ALLOWED_CLOCK_SKEW_MS = 2 * 60 * 1000; // 2 minutes
@@ -25,7 +49,13 @@ function extractFromMessage(message: string, label: string): string | null {
 }
 
 serve(async (req) => {
+  const originHeader = req.headers.get("origin") || "";
+  const corsHeaders = buildCorsHeaders(originHeader);
+
   if (req.method === "OPTIONS") {
+    if (originHeader && !isOriginAllowed(originHeader)) {
+      return new Response("forbidden", { status: 403 });
+    }
     return new Response("ok", { headers: corsHeaders });
   }
 
@@ -68,7 +98,13 @@ serve(async (req) => {
     }
 
     // Enforce origin binding if available
-    const reqOrigin = req.headers.get("origin") || "";
+    const reqOrigin = originHeader;
+    if (reqOrigin && !isOriginAllowed(reqOrigin)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request origin" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     if (messageOrigin && origin && messageOrigin !== origin) {
       return new Response(
         JSON.stringify({ error: "Invalid message: origin mismatch" }),

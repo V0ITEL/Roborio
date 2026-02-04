@@ -22,6 +22,10 @@
           "value": "nosniff"
         },
         {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: data: https://*.solana.com https://api.mainnet-beta.solana.com https://api.devnet.solana.com wss://api.mainnet-beta.solana.com wss://api.devnet.solana.com https://rpc.ankr.com wss://rpc.ankr.com https://terminal.jup.ag https://*.supabase.co https://cdn.jsdelivr.net https://*.xnftdata.com wss://*.xnftdata.com; frame-src 'self' https://terminal.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+        },
+        {
           "key": "X-Frame-Options",
           "value": "DENY"
         },
