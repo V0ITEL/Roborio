@@ -100,7 +100,7 @@ function getSolflareDeepLink(targetUrl) {
 function getBackpackDeepLink(targetUrl) {
     const url = targetUrl || window.location.href;
     const ref = window.location.origin;
-    return `https://backpack.app/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
+    return `https://backpack.app/ul/browse/?url=${encodeURIComponent(url)}&ref=${encodeURIComponent(ref)}`;
 }
 
 /**
@@ -1167,8 +1167,14 @@ export function initWallet() {
     const autoConnectWallet = async () => {
         try {
             const preferredWallet = getPreferredWallet();
-            const { provider } = getWalletProvider(preferredWallet);
+            const { provider, wallet } = getWalletProvider(preferredWallet);
             if (!provider?.connect) return;
+
+            // Solflare doesn't support onlyIfTrusted properly - it shows unlock popup
+            // Only auto-connect Solflare if already connected (has publicKey)
+            if (wallet === 'solflare' && !provider.publicKey) {
+                return;
+            }
 
             // Try silent connect - only works if user previously approved
             const response = await provider.connect({ onlyIfTrusted: true });
