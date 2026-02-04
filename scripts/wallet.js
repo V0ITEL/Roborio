@@ -69,6 +69,27 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const WALLET_NETWORK = import.meta.env.VITE_SOLANA_NETWORK || 'devnet';
 const WALLET_RPC_ENDPOINT = import.meta.env.VITE_SOLANA_RPC_ENDPOINT || '';
 
+// SOL price cache
+let cachedSolPrice = null;
+let solPriceLastFetch = 0;
+const SOL_PRICE_CACHE_MS = 60000; // Cache for 1 minute
+
+async function fetchSolPrice() {
+    const now = Date.now();
+    if (cachedSolPrice && (now - solPriceLastFetch) < SOL_PRICE_CACHE_MS) {
+        return cachedSolPrice;
+    }
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+        const data = await res.json();
+        cachedSolPrice = data?.solana?.usd || null;
+        solPriceLastFetch = now;
+        return cachedSolPrice;
+    } catch {
+        return cachedSolPrice; // Return cached value on error
+    }
+}
+
 function getWalletRpcEndpoint() {
     const override = window.ROBORIO_ESCROW_CONFIG || {};
     const network = override.network || WALLET_NETWORK;
@@ -100,7 +121,7 @@ function getSolflareDeepLink(targetUrl) {
 function getBackpackDeepLink(targetUrl) {
     const url = targetUrl || window.location.href;
     const ref = window.location.origin;
-    return `https://backpack.app/ul/browse/?url=${encodeURIComponent(url)}&ref=${encodeURIComponent(ref)}`;
+    return `https://backpack.app/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
 }
 
 /**
@@ -875,9 +896,21 @@ export function initWallet() {
             balanceEl.textContent = walletState.balance.toFixed(4) + ' SOL';
         }
         if (balanceUsdEl) {
-            
-            const usdValue = walletState.balance * 180;
-            balanceUsdEl.textContent = '~ $' + usdValue.toFixed(2);
+            const currentNetwork = walletState.network || WALLET_NETWORK;
+            if (currentNetwork !== 'mainnet') {
+                // Devnet/testnet SOL has no real value
+                balanceUsdEl.textContent = 'Devnet';
+            } else {
+                // Fetch real price for mainnet
+                fetchSolPrice().then(price => {
+                    if (price) {
+                        const usdValue = walletState.balance * price;
+                        balanceUsdEl.textContent = '~ $' + usdValue.toFixed(2);
+                    } else {
+                        balanceUsdEl.textContent = '';
+                    }
+                });
+            }
         }
         updateNetworkBadge();
     }
