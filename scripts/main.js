@@ -444,6 +444,41 @@ async function loadExternalScripts() {
         }
     }
 
+    // ============ Network Info Bottom Sheet (Mobile) ============
+    function initNetworkInfoSheet() {
+        const overlay = document.getElementById('networkInfoOverlay');
+        const sheet = document.getElementById('networkInfoSheet');
+        const closeBtn = document.getElementById('networkInfoClose');
+        const mobileInfoBtn = document.querySelector('.mobile-menu .network-info');
+
+        if (!overlay || !sheet || !mobileInfoBtn) return;
+
+        function openSheet() {
+            overlay.classList.add('active');
+            sheet.classList.add('active');
+        }
+
+        function closeSheet() {
+            overlay.classList.remove('active');
+            sheet.classList.remove('active');
+        }
+
+        mobileInfoBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openSheet();
+        });
+
+        closeBtn?.addEventListener('click', closeSheet);
+        overlay.addEventListener('click', closeSheet);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sheet.classList.contains('active')) {
+                closeSheet();
+            }
+        });
+    }
+
     // ============ Seamless Infinite Marquee ============
     function initMarquee() {
         try {
@@ -1073,6 +1108,7 @@ async function loadExternalScripts() {
         initPreloader();
         initLanguageToggle();
         initMobileMenu();
+        initNetworkInfoSheet();
         initStickyNavbar(); // Sticky navbar with scroll effect
         initMarquee();
         initFAQ();

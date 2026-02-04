@@ -609,6 +609,78 @@ border-color: transparent transparent rgba(8, 15, 28, 0.95) transparent;
 .network-info:focus-visible .network-tooltip {
 opacity: 1;
 }
+/* Hide tooltip on mobile menu - use bottom sheet instead */
+.mobile-menu .network-tooltip {
+display: none;
+}
+
+/* Bottom Sheet */
+.bottom-sheet-overlay {
+position: fixed;
+inset: 0;
+background: rgba(0, 0, 0, 0.5);
+opacity: 0;
+visibility: hidden;
+transition: opacity 0.3s ease, visibility 0.3s ease;
+z-index: 9998;
+}
+.bottom-sheet-overlay.active {
+opacity: 1;
+visibility: visible;
+}
+.bottom-sheet {
+position: fixed;
+bottom: 0;
+left: 0;
+right: 0;
+background: #0a0a0a;
+border-top: 1px solid rgba(255, 255, 255, 0.1);
+border-top-left-radius: 20px;
+border-top-right-radius: 20px;
+padding: 12px 24px 32px;
+transform: translateY(100%);
+transition: transform 0.3s ease;
+z-index: 9999;
+max-height: 80vh;
+overflow-y: auto;
+}
+.bottom-sheet.active {
+transform: translateY(0);
+}
+.bottom-sheet-handle {
+width: 40px;
+height: 4px;
+background: rgba(255, 255, 255, 0.3);
+border-radius: 2px;
+margin: 0 auto 20px;
+}
+.bottom-sheet-content h3 {
+font-size: 18px;
+font-weight: 600;
+margin-bottom: 12px;
+color: var(--text-primary, #fff);
+}
+.bottom-sheet-content p {
+font-size: 14px;
+line-height: 1.6;
+color: var(--text-secondary, #a0a0a0);
+margin-bottom: 24px;
+}
+.bottom-sheet-close {
+width: 100%;
+padding: 14px;
+background: var(--accent, #10b981);
+color: #000;
+border: none;
+border-radius: 12px;
+font-size: 16px;
+font-weight: 600;
+cursor: pointer;
+transition: opacity 0.2s;
+}
+.bottom-sheet-close:hover {
+opacity: 0.9;
+}
 .mobile-menu-toggle {
 display: none;
 flex-direction: column;
