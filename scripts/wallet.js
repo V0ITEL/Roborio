@@ -118,12 +118,6 @@ function getSolflareDeepLink(targetUrl) {
     return `https://solflare.com/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
 }
 
-function getBackpackDeepLink(targetUrl) {
-    const url = targetUrl || window.location.href;
-    const ref = window.location.origin;
-    return `https://backpack.app/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
-}
-
 /**
  * Save JWT to localStorage and memory
  *
@@ -1055,7 +1049,10 @@ export function initWallet() {
 
             if (!provider) {
                 if (isIOSDevice()) {
-                    window.location.href = getBackpackDeepLink(window.location.href);
+                    // Backpack iOS doesn't support browse deeplinks properly
+                    // Show instruction instead
+                    notify.info('Open Backpack app → Explore → enter roborio.xyz');
+                    closeWalletModal();
                 } else {
                     window.open('https://backpack.app/', '_blank');
                 }
