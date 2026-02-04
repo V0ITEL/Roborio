@@ -23,7 +23,8 @@ pub mod roborio_escrow {
         // Validate inputs
         require!(amount > 0, EscrowError::InvalidAmount);
         require!(rental_duration_hours > 0, EscrowError::InvalidDuration);
-        require!(robot_id.len() > 0 && robot_id.len() <= 64, EscrowError::InvalidRobotId);
+        // Solana PDA seeds are limited to 32 bytes each
+        require!(robot_id.len() > 0 && robot_id.len() <= 32, EscrowError::InvalidRobotId);
 
         // Initialize escrow state
         escrow.renter = ctx.accounts.renter.key();
@@ -320,7 +321,7 @@ pub struct CloseEscrow<'info> {
 pub struct Escrow {
     pub renter: Pubkey,        // 32 bytes
     pub operator: Pubkey,      // 32 bytes
-    pub robot_id: String,      // 4 + 64 bytes (max)
+    pub robot_id: String,      // 4 + 32 bytes (max, limited by PDA seed)
     pub amount: u64,           // 8 bytes
     pub created_at: i64,       // 8 bytes
     pub expires_at: i64,       // 8 bytes
@@ -332,7 +333,7 @@ impl Escrow {
     pub const SPACE: usize = 8 + // discriminator
         32 +  // renter
         32 +  // operator
-        4 + 64 + // robot_id (String)
+        4 + 32 + // robot_id (String, max 32 bytes for PDA seed)
         8 +   // amount
         8 +   // created_at
         8 +   // expires_at
