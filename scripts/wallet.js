@@ -94,13 +94,13 @@ function getPhantomDeepLink(targetUrl) {
 function getSolflareDeepLink(targetUrl) {
     const url = targetUrl || window.location.href;
     const ref = window.location.origin;
-    return `https://solflare.com/ul/browse/?url=${encodeURIComponent(url)}&ref=${encodeURIComponent(ref)}`;
+    return `https://solflare.com/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
 }
 
 function getBackpackDeepLink(targetUrl) {
     const url = targetUrl || window.location.href;
     const ref = window.location.origin;
-    return `https://backpack.app/ul/browse/?url=${encodeURIComponent(url)}&ref=${encodeURIComponent(ref)}`;
+    return `https://backpack.app/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
 }
 
 /**
