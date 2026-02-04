@@ -90,6 +90,16 @@ function getPhantomDeepLink(targetUrl) {
     return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
 }
 
+function getSolflareDeepLink(targetUrl) {
+    const url = targetUrl || window.location.href;
+    return `https://solflare.com/ul/browse/${encodeURIComponent(url)}`;
+}
+
+function getBackpackDeepLink(targetUrl) {
+    const url = targetUrl || window.location.href;
+    return `https://backpack.app/ul/browse/${encodeURIComponent(url)}`;
+}
+
 /**
  * Save JWT to localStorage and memory
  *
@@ -613,8 +623,6 @@ export function initWallet() {
     const walletDropdown = document.getElementById('walletDropdown');
     const walletOptions = document.querySelectorAll('.wallet-option');
     const disconnectBtn = document.getElementById('disconnectWallet');
-    const walletDeeplink = document.getElementById('walletDeeplink');
-    const phantomDeeplink = document.getElementById('phantomDeeplink');
     const openBuyModalBtn = document.getElementById('openBuyModal');
     const buyRoborioHeroBtn = document.getElementById('buyRoborioHero');
     const buyModal = document.getElementById('buyModal');
@@ -632,16 +640,6 @@ export function initWallet() {
         }
     };
 
-    function updateWalletDeeplink() {
-        if (!walletDeeplink || !phantomDeeplink) return;
-        const hasProvider = !!window.phantom?.solana;
-        if (!isIOSDevice() || hasProvider) {
-            walletDeeplink.hidden = true;
-            return;
-        }
-        phantomDeeplink.href = getPhantomDeepLink(window.location.href);
-        walletDeeplink.hidden = false;
-    }
 
     // Open wallet modal
     function openWalletModal() {
@@ -654,7 +652,6 @@ export function initWallet() {
             walletModalOverlay?.setAttribute('aria-hidden', 'false');
             // Focus first wallet option
             walletModal?.querySelector('.wallet-option')?.focus();
-            updateWalletDeeplink();
         }
     }
 
@@ -966,7 +963,11 @@ export function initWallet() {
             const provider = window.solflare;
 
             if (!provider?.isSolflare) {
-                window.open('https://solflare.com/', '_blank');
+                if (isIOSDevice()) {
+                    window.location.href = getSolflareDeepLink(window.location.href);
+                } else {
+                    window.open('https://solflare.com/', '_blank');
+                }
                 return;
             }
 
@@ -1017,7 +1018,11 @@ export function initWallet() {
             const provider = window.backpack;
 
             if (!provider) {
-                window.open('https://backpack.app/', '_blank');
+                if (isIOSDevice()) {
+                    window.location.href = getBackpackDeepLink(window.location.href);
+                } else {
+                    window.open('https://backpack.app/', '_blank');
+                }
                 return;
             }
 
@@ -1097,8 +1102,6 @@ export function initWallet() {
     connectBtnMobile?.addEventListener('click', openWalletModal);
     walletModalClose?.addEventListener('click', closeWalletModal);
     walletModalOverlay?.addEventListener('click', closeWalletModal);
-
-    updateWalletDeeplink();
 
     walletOptions?.forEach(option => {
         option.addEventListener('click', async () => {

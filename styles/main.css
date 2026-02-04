@@ -2885,45 +2885,6 @@ font-size: 0.8rem;
 color: var(--text-muted);
 text-align: center;
 }
-.wallet-deeplink {
-margin-top: 16px;
-padding: 12px;
-border-radius: 12px;
-background: rgba(8, 18, 14, 0.6);
-border: 1px solid rgba(16, 185, 129, 0.15);
-text-align: center;
-}
-.wallet-deeplink[hidden] {
-display: none !important;
-}
-.wallet-deeplink-title {
-font-size: 0.82rem;
-font-weight: 600;
-margin: 0 0 6px;
-color: #e5f7ee;
-}
-.wallet-deeplink-desc {
-font-size: 0.75rem;
-margin: 0 0 10px;
-color: rgba(255, 255, 255, 0.7);
-}
-.wallet-deeplink-btn {
-display: inline-flex;
-align-items: center;
-justify-content: center;
-gap: 8px;
-padding: 8px 14px;
-border-radius: 10px;
-background: #10b981;
-color: #05110c;
-font-weight: 600;
-font-size: 0.82rem;
-text-decoration: none;
-border: none;
-}
-.wallet-deeplink-btn:hover {
-background: #34d399;
-}
 .wallet-dropdown {
 position: fixed;
 inset: 0;
