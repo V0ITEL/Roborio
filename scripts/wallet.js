@@ -87,17 +87,20 @@ function isIOSDevice() {
 
 function getPhantomDeepLink(targetUrl) {
     const url = targetUrl || window.location.href;
-    return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
+    const ref = window.location.origin;
+    return `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
 }
 
 function getSolflareDeepLink(targetUrl) {
     const url = targetUrl || window.location.href;
-    return `https://solflare.com/ul/browse/${encodeURIComponent(url)}`;
+    const ref = window.location.origin;
+    return `https://solflare.com/ul/browse/?url=${encodeURIComponent(url)}&ref=${encodeURIComponent(ref)}`;
 }
 
 function getBackpackDeepLink(targetUrl) {
     const url = targetUrl || window.location.href;
-    return `https://backpack.app/ul/browse/${encodeURIComponent(url)}`;
+    const ref = window.location.origin;
+    return `https://backpack.app/ul/browse/?url=${encodeURIComponent(url)}&ref=${encodeURIComponent(ref)}`;
 }
 
 /**
